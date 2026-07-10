@@ -1,56 +1,69 @@
-# scispy
+<div align="center">
+
+# **sparty**
+
+**Single-Cell In-Situ Spatial-Omics Data Analysis**
+
+---
+
+<p align="center">
+  <a href="https://sparty.readthedocs.io/en/latest/" target="_blank">Documentation</a> •
+  <a href="https://sparty.readthedocs.io/en/latest/docs/notebooks/example.ipynb" target="_blank">Examples</a> •
+  <a href="https://www.biorxiv.org/" target="_blank">Preprint</a>
+</p>
 
 [![Tests][badge-tests]][link-tests]
 [![Documentation][badge-docs]][link-docs]
 
-[badge-tests]: https://img.shields.io/github/actions/workflow/status/bfxomics/scispy/test.yaml?branch=main
-[link-tests]: https://github.com/bfxomics/scispy/actions/workflows/test.yml
-[badge-docs]: https://img.shields.io/readthedocs/scispy
+[badge-tests]: https://img.shields.io/github/actions/workflow/status/cobioda/sparty/test.yaml?branch=main
+[link-tests]: https://github.com/cobioda/sparty/actions/workflows/test.yml
+[badge-docs]: https://img.shields.io/readthedocs/sparty
 
-single-cell in-situ python package
+</div>
+
+## Background
+
+<p>
+  A pthon package build on top of spatialdata for Single-Cell In-Situ Spatial-Omics data analysis, developped to handle Vizgen (merscope), Nanostring (cosmx) and 10xGenomics (Xenium) experiments.
+</p>
+
+<p align="center">
+  <img src="https://github.com/cobioda/sparty/docs/_static/sparty.png" width="300px">
+</p>
+
+## Features
+
+-   **Read in-situ spatial-omics assays experiments**: build on top of spatialdata package
+-   **Automatic cell type annotation**: scanvi implementation
+-   **Import anatomical .csv shape file from xenium explorer**: as anndata observations
+-   **Automatic run pseudobulk data analysis**: using decoupler and pydeseq2 packages
+-   **Compute cell type proportion in region**: integrating statistical test in case of replicates
+-   **Produce high quality spatial figures**: build on top of spatialdata_plot package
 
 ## Getting started
 
 Please refer to the [documentation][link-docs]. In particular, the
 
 -   [API documentation][link-api].
+-   [Tutorials][link-tutorial]
 
 ## Installation
 
-You need to have Python 3.9 or newer installed on your system. If you don't have
-Python installed, we recommend installing [Mambaforge](https://github.com/conda-forge/miniforge#mambaforge).
-
-There are several alternative options to install scispy:
-
-<!--
-1) Install the latest release of `scispy` from `PyPI <https://pypi.org/project/scispy/>`_:
+1. Create a conda environment (Python >= 3.10)
+2. Install sparty using pip:
 
 ```bash
-pip install scispy
-```
--->
-
-1. Install the latest development version:
-
-```bash
-pip install git+https://github.com/bfxomics/scispy.git@main
+conda create -n sparty python==3.10
+conda activate sparty
+pip install git+https://github.com/cobioda/sparty.git@main
 ```
 
-## Release notes
+## Contribution
 
-See the [changelog][changelog].
+If you found a bug or you want to propose a new feature, please use the [issue tracker][issue-tracker].
 
-## Contact
-
-For questions and help requests, you can reach out in the [scverse discourse][scverse-discourse].
-If you found a bug, please use the [issue tracker][issue-tracker].
-
-## Citation
-
-> t.b.a
-
-[scverse-discourse]: https://discourse.scverse.org/
-[issue-tracker]: https://github.com/bfxomics/scispy/issues
-[changelog]: https://scispy.readthedocs.io/latest/changelog.html
-[link-docs]: https://scispy.readthedocs.io
-[link-api]: https://scispy.readthedocs.io/latest/api.html
+[issue-tracker]: https://github.com/cobioda/sparty/issues
+[changelog]: https://sparty.readthedocs.io/en/latest/changelog.html
+[link-docs]: https://sparty.readthedocs.io
+[link-api]: https://sparty.readthedocs.io/en/latest/api.html
+[link-tutorial]: https://sparty.readthedocs.io/en/latest/notebooks/tutorial.html
