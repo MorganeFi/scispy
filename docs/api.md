@@ -43,8 +43,6 @@
     tl.pseudobulk
     tl.sdata_rotate
     tl.sdata_querybox
-    tl.scis_prop
-    tl.shapes_of_cell_type
 ```
 
 ## Plotting
@@ -59,7 +57,6 @@
     pl.plot_qc
     pl.plot_sdata
     pl.plot_multi_sdata
-    pl.plot_shapes
     pl.plot_shape_along_axis
     pl.plot_per_groups
     pl.scis_prop
