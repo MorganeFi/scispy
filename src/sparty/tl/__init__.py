@@ -14,7 +14,7 @@ from .basic import (
 
 from .shapes import (
     add_to_shapes,
-    shapes_of_cell_type,
+    # shapes_of_cell_type,
     add_metadata_to_shape,
     shape_to_pseudobulk,
     # create_shapes,
@@ -44,7 +44,7 @@ __all__ = [
     "pseudobulk",
     "sdata_rotate",
     "sdata_querybox",
-    "shapes_of_cell_type",
+    # "shapes_of_cell_type",
     "centerline",
     "shapeToImg",
     "add_metadata_to_shape",
