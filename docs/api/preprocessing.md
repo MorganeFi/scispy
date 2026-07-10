@@ -9,7 +9,5 @@
     run_scanpy
     subsetSamples
     metrics_summary
-    <!-- subset_transcripts -->
-    <!-- compute_gene_compartment_percentages -->
-    
+  
 ```
