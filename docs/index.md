@@ -10,6 +10,7 @@ api.md
 changelog.md
 contributing.md
 references.md
+template_usage.md
 
 notebooks/example
 ```
