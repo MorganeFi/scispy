@@ -2,7 +2,7 @@
 
 # **sparty**
 
-**Single-Cell In-Situ Spatial-Omics Data Analysis**
+**Spatial analysis for in-situ RNA transcripts in python**
 
 ---
 
@@ -49,11 +49,11 @@ Please refer to the [documentation][link-docs]. In particular, the
 
 ## Installation
 
-1. Create a conda environment (Python >= 3.10)
+1. Create a conda environment (Python >= 3.11)
 2. Install sparty using pip:
 
 ```bash
-conda create -n sparty python==3.10
+conda create -n sparty python==3.11
 conda activate sparty
 pip install git+https://github.com/cobioda/sparty.git@main
 ```
