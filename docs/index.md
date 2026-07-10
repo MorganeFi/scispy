@@ -6,11 +6,11 @@
 :hidden: true
 :maxdepth: 1
 
+tutorials.md
 api.md
 changelog.md
+template_usage.md
 contributing.md
 references.md
-template_usage.md
 
-notebooks/example
 ```

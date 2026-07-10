@@ -1,63 +1,66 @@
 # API
 
-## i/o
+```{eval-rst}
+.. module:: sparty
+```
+
+Import Sparty as:
+
+```python
+import sparty as spt
+```
+
+## Input/Output
 
 ```{eval-rst}
-.. module:: sparty.io
-.. currentmodule:: sparty
+.. currentmodule:: sparty.io
 
-.. autosummary::
-    :toctree: generated
+.. automodule:: sparty.io
+    :members:
 
-    io.load_merscope
-    io.load_xenium
-    io.load_cosmx
 ```
 
 ## Preprocessing
 
 ```{eval-rst}
-.. module:: sparty.pp
-.. currentmodule:: sparty
+.. currentmodule:: sparty.pp
 
 .. autosummary::
     :toctree: generated
 
     pp.run_scanpy
-    pp.sync_shape
+    pp.subsetSamples
+    pp.metrics_summary
+    pp.subset_transcripts
+    pp.compute_gene_compartment_percentages
 ```
+
 
 ## Tools
 
 ```{eval-rst}
-.. module:: sparty.tl
-.. currentmodule:: sparty
+.. currentmodule:: sparty.tl
 
-.. autosummary::
-    :toctree: generated
-
-    tl.add_to_shapes
-    tl.add_shapes_from_hdf5
-    tl.add_to_points
-    tl.get_sdata_polygon
-    tl.pseudobulk
-    tl.sdata_rotate
-    tl.sdata_querybox
+.. autofunction:: pseudobulk
+.. autofunction:: alpha_shape_optimal
+.. autofunction:: centerline
+.. autofunction:: unassigned_RNA
 ```
+
 
 ## Plotting
 
 ```{eval-rst}
-.. module:: sparty.pl
-.. currentmodule:: sparty
+.. currentmodule:: sparty.pl
 
 .. autosummary::
     :toctree: generated
 
-    pl.plot_qc
-    pl.plot_sdata
-    pl.plot_multi_sdata
-    pl.plot_shape_along_axis
-    pl.plot_per_groups
+    pl.barplotDE
+    pl.stripPlotDE
+    pl.plot_DE
+    pl.gene_heatmaps
+    pl.colocalization
+    pl.plot_density
     pl.scis_prop
 ```
