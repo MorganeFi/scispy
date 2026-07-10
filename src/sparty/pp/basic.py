@@ -255,7 +255,8 @@ def run_scanpy(
     # Normalize + log transform
     sc.pp.normalize_total(adata)
     sc.pp.log1p(adata)
-    adata.raw = adata
+    # adata.raw = adata
+    adata.layers["counts"] = adata.X.copy()
 
     # Optional scaling
     if scale:

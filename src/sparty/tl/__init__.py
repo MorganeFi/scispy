@@ -17,7 +17,7 @@ from .shapes import (
     shapes_of_cell_type,
     add_metadata_to_shape,
     shape_to_pseudobulk,
-    create_shapes,
+    # create_shapes,
 )
 
 from .unfolding import (
@@ -54,6 +54,6 @@ __all__ = [
     "orthogonalDistance",
     "shape_to_pseudobulk",
     "alpha_shape_optimal",
-    "create_shapes",
+    # "create_shapes",
     "unassigned_RNA"
 ]

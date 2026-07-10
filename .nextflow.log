@@ -1,0 +1,20 @@
+mars-04 15:48:56.257 [main] DEBUG nextflow.cli.Launcher - $> nextflow run -bg nf-core/sopa --help
+mars-04 15:48:56.374 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W  ~  version 25.10.2
+mars-04 15:48:56.400 [main] DEBUG nextflow.plugin.PluginsFacade - Setting up plugin manager > mode=prod; embedded=false; plugins-dir=/root/.nextflow/plugins; core-plugins: nf-amazon@3.4.2,nf-azure@1.20.2,nf-cloudcache@0.5.0,nf-codecommit@0.5.0,nf-console@1.3.0,nf-google@1.23.3,nf-k8s@1.2.2,nf-tower@1.17.3,nf-wave@1.16.1
+mars-04 15:48:56.426 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Enabled plugins: []
+mars-04 15:48:56.427 [main] INFO  o.pf4j.DefaultPluginStatusProvider - Disabled plugins: []
+mars-04 15:48:56.429 [main] INFO  org.pf4j.DefaultPluginManager - PF4J version 3.12.0 in 'deployment' mode
+mars-04 15:48:56.444 [main] DEBUG nextflow.util.RetryConfig - Missing nextflow session - using default retry config
+mars-04 15:48:56.580 [main] INFO  org.pf4j.AbstractPluginManager - No plugins
+mars-04 15:48:56.594 [main] DEBUG nextflow.scm.ProviderConfig - Using SCM config path: /root/.nextflow/scm
+mars-04 15:48:57.440 [main] DEBUG nextflow.scm.AssetManager - Git config: /root/.nextflow/assets/nf-core/sopa/.git/config; branch: master; remote: origin; url: https://github.com/nf-core/sopa.git
+mars-04 15:48:57.482 [main] DEBUG nextflow.scm.RepositoryFactory - Found Git repository result: [RepositoryFactory]
+mars-04 15:48:57.497 [main] DEBUG nextflow.scm.AssetManager - Git config: /root/.nextflow/assets/nf-core/sopa/.git/config; branch: master; remote: origin; url: https://github.com/nf-core/sopa.git
+mars-04 15:48:57.615 [main] DEBUG nextflow.cli.Launcher - Operation aborted
+nextflow.exception.AbortOperationException: Project `nf-core/sopa` is currently stuck on revision: dev -- you need to explicitly specify a revision with the option `-r` in order to use it
+	at nextflow.scm.AssetManager.checkout(AssetManager.groovy:942)
+	at nextflow.cli.CmdRun.getScriptFile0(CmdRun.groovy:648)
+	at nextflow.cli.CmdRun.getScriptFile(CmdRun.groovy:574)
+	at nextflow.cli.CmdRun.run(CmdRun.groovy:329)
+	at nextflow.cli.Launcher.run(Launcher.groovy:515)
+	at nextflow.cli.Launcher.main(Launcher.groovy:675)

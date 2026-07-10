@@ -77,10 +77,13 @@ def load_merscope(
 
 def load_xenium(
     path: str,
-    index_table: bool = True,
-    region: str = "cell_boundaries",
     layer: str ='counts',
+    region: str = "cell_boundaries",
     feature_key: str = "feature_name",
+    instance_key: str = 'cell_id',
+    table_key: str = 'table',
+    spatial_key: str = 'spatial',
+    index_table: bool = True,
     n_jobs: int = 1,
 ) -> sd.SpatialData:
     """Load xenium data as SpatialData object
@@ -102,22 +105,21 @@ def load_xenium(
     SpatialData object
     """
     sdata = spatialdata_io.xenium(path, n_jobs = n_jobs)
-    sdata['table'].layers[layer] = sdata['table'].X.copy()
-    sdata['table'].obs[["center_x", "center_y"]] = sdata['table'].obsm["spatial"]
+    sdata[table_key].layers[layer] = sdata[table_key].X.copy()
+    sdata[table_key].obs[["center_x", "center_y"]] = sdata[table_key].obsm[spatial_key]
     
-    sdata['table'].uns["spatialdata_attrs"]["region"] = region
-    sdata['table'].uns["spatialdata_attrs"]["feature_key"] = feature_key
+    sdata[table_key].uns["spatialdata_attrs"] = {
+        'region': region,
+        'region_key': 'region',
+        'instance_key': instance_key,
+        'feature_key': feature_key 
+    }
 
-    sdata['table'].obs["region"] = region
-    sdata['table'].obs["region"] = sdata['table'].obs["region"].astype('category')
+    sdata[table_key].obs['region'] = region
+    sdata[table_key].obs['region'] = sdata[table_key].obs['region'].astype('category')
 
     if index_table:
-        sdata['table'].obs.index = sdata['table'].obs['cell_id']
-        sdata['table'].obs.index.name = None
-    # sdata.table.obs_names.name = None
-    # sdata['cell_circles'].index.name = None
-    # sdata['cell_boundaries'].index.name = None
-    # sdata['nucleus_boundaries'].index.name = None
+        sdata[table_key].obs_names = sdata[table_key].obs[instance_key].values
 
     return sdata
 
