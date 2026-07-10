@@ -24,7 +24,6 @@
     :toctree: generated
 
     pp.run_scanpy
-    pp.scvi_annotate
     pp.sync_shape
 ```
 
@@ -41,7 +40,7 @@
     tl.add_shapes_from_hdf5
     tl.add_to_points
     tl.get_sdata_polygon
-    tl.run_pseudobulk
+    tl.pseudobulk
     tl.sdata_rotate
     tl.sdata_querybox
     tl.scis_prop
@@ -63,4 +62,5 @@
     pl.plot_shapes
     pl.plot_shape_along_axis
     pl.plot_per_groups
+    pl.scis_prop
 ```
