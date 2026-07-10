@@ -1,5 +1,6 @@
 from spatialdata.transformations import get_transformation
 import geopandas as gpd
+import pandas as pd
 
 from ..registry import TECHNO_REGISTRY
 from ..constants import GENE_EXCLUDE_PATTERN #, XeniumKeys, MerscopeKeys, 
@@ -89,3 +90,60 @@ def subset_transcripts(
 #     df_transcripts = df_transcripts[~(df_transcripts[feature_key].str.contains(gene_exclude_pattern, regex=True))].compute()
 #     df_transcripts[feature_key] = df_transcripts[feature_key].cat.remove_unused_categories()
 #     return df_transcripts
+
+
+def compute_stat_in_cells(
+    sdata,
+    sample: str | None = None,
+    genes: str | list | None = None,
+    # data: pd.DataFrame,
+    group_by: list = ['feature_name', 'cell_id'],
+    qv: int = 20,
+    techno = "Xenium", # 'Xenium' or 'Merscope'
+    # gene_exclude_pattern = GENE_EXCLUDE_PATTERN,
+    feature_key: str = 'feature_name',
+    transcript_key: str= "transcripts",
+    nucleus_key: str = 'overlaps_nucleus',
+) -> pd.DataFrame:
+    
+    data = subset_transcripts(
+        sdata=sdata,
+        genes=genes,
+        qv=qv,
+        transcript_key=transcript_key,
+        techno = techno, # 'Xenium' or 'Merscope'
+        only_in_cell = True,
+        only_outside = False,
+        feature_key=feature_key,
+        # transform = True,
+        # scale = False,
+        # copy = True,
+        return_gpd = False,
+    )
+
+    percent_in_nucleus = data.groupby(group_by, observed = True)[nucleus_key].mean() * 100
+
+    result = pd.DataFrame({
+        'percent_in_nucleus': percent_in_nucleus,
+        'percent_in_cytoplasm': 100 - percent_in_nucleus
+    })
+    result['counts'] = data.groupby(group_by, observed = True)[group_by[0]].count()
+    if sample:
+        result['sample'] = sample
+    return result.reset_index()
+
+
+# def compute_stat_in_cells(
+#     data: pd.DataFrame,
+#     sample: str,
+#     group_by: list = ['feature_name', 'cell_id']
+# ) -> pd.DataFrame:
+#     percent_in_nucleus = data.groupby(group_by, observed = True)['overlaps_nucleus'].mean() * 100
+
+#     result = pd.DataFrame({
+#         'percent_in_nucleus': percent_in_nucleus,
+#         'percent_in_cytoplasm': 100 - percent_in_nucleus
+#     })
+#     result['counts'] = data.groupby(group_by, observed = True)[group_by[0]].count()
+#     result['sample'] = sample
+#     return result.reset_index()

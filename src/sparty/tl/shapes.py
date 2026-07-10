@@ -8,7 +8,7 @@ import shapely
 import numpy as np
 import anndata as ad
 
-from ..pl._shapes import plot_shapes
+# from ..pl._shapes import plot_shapes
 from ..tl.alpha_shape import alpha_shape_optimal
 
 # from shapely.geometry import Polygon
@@ -236,75 +236,46 @@ def count_in_shape(
 
 # def create_shapes(
 #     file,
-#     all= True,
-#     plot_fig = True,
-#     ncols = 4,
+#     pixel_size: float = 0.2125,
+#     plot_fig: bool = True,
+#     ncols: int = 4,
+#     return_gdf: bool = True, 
 # ):
-#     df_shapes = pd.read_csv(file, skiprows= 2)
-    
-#     if "Selection" in df_shapes.columns:
-#         _shapes = df_shapes['Selection'].unique()
-#     else: 
-#         _shapes = ['one']
-#         print("No selection name, supposed to be only one shape...")
+#     """
+#     Create polygons from a CSV file containing X/Y coordinates.
 
-#     nrows = len(_shapes)//ncols + (len(_shapes) % ncols>0)
+#     If the CSV has a 'Selection' column, one polygon is created per selection.
+#     Otherwise, the whole file is treated as one polygon.
+#     """
+#     df = pd.read_csv(file, skiprows=2)
 
+#     if not {"X", "Y"}.issubset(df.columns):
+#         raise ValueError("CSV file must contain 'X' and 'Y' columns.")
 
-#     plt.figure(figsize =(5*ncols, nrows* 5))
-#     plt.subplots_adjust(hspace=0.5, wspace=0.25)
+#     if pixel_size <= 0:
+#         raise ValueError("pixel_size must be greater than 0.")
+
+#     if "Selection" not in df.columns:
+#         df["Selection"] = "shape"
 
 #     shapes = {}
-#     for n, shape in enumerate(_shapes, start=1):
-#         if len(_shapes) > 1:
-#             sub = df_shapes[df_shapes['Selection'] == shape]
-#         else:
-#             sub = df_shapes
-#         shapes[shape] = shapely.Polygon(
-#             zip(sub['X'],
-#                 sub['Y']))
-        
-#         if plot_fig:
-#             x, y = shapes[shape].exterior.xy
-#             ax = plt.subplot(nrows, ncols, n)
-#             ax.plot(x, y, linewidth=2)
-#             ax.set_title(shape, fontsize=20)
-#             # ax.set_aspect('equal')
-#             # ax.axis('off')          # Turn off axes ticks and labels
-#             # ax.set_frame_on(True)  # Remove the box around the plot
-#     plt.show()
-#     return shapes
 
-def create_shapes(
-    file,
-    all: bool = True,
-    plot_fig: bool = True,
-    ncols: int = 4,
-):
-    df_shapes = pd.read_csv(file, skiprows=2)
+#     for name, group in df.groupby("Selection", sort=False):
+#         coords = group[["X", "Y"]] / pixel_size
+#         shapes[name] = shapely.Polygon(coords.to_numpy())
+    
+#     if plot_fig:
+#         plot_shapes(shapes, ncols=ncols)
+       
+#     if not return_gdf:
+#         return shapes
+    
+#     return gpd.GeoDataFrame({
+#         "name": shapes.keys(),
+#         "geometry": shapes.values(),},
+#         geometry="geometry",
+#     )
 
-    if "Selection" in df_shapes.columns:
-        shape_names = df_shapes["Selection"].unique()
-    else:
-        shape_names = ["one"]
-        print("No selection name, supposed to be only one shape...")
-
-    shapes = {}
-
-    for shape in shape_names:
-        if len(shape_names) > 1:
-            sub = df_shapes[df_shapes["Selection"] == shape]
-        else:
-            sub = df_shapes
-
-        shapes[shape] = shapely.Polygon(
-            zip(sub["X"], sub["Y"])
-        )
-
-    if plot_fig:
-        plot_shapes(shapes, ncols=ncols)
-
-    return shapes
 
 def shape_to_pseudobulk(
     sdata: sd.SpatialData,

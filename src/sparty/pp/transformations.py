@@ -3,30 +3,39 @@ from spatialdata.transformations import Identity, Scale, Sequence
 # import dask.dataframe as dd
 
 def _transform_coords(ddf, M):
-    """Transformation matricielle pour une partition Dask."""
+    """Matrix transformation for a Dask partition"""
     coords = np.vstack([ddf['x'], ddf['y'], np.ones(len(ddf))])
     transformed = M @ coords
     ddf['x'] = transformed[0]
     ddf['y'] = transformed[1]
     return ddf
 
-
-def _to_affine_shapely(M):
-    a, b, xoff = M[0]
-    d, e, yoff = M[1]
-    return (a, b, d, e, xoff, yoff)
-
-
-def compute_bounds_dask(transcripts, transfo, scale=False):
-    """
-    Applique une transformation à un Dask DataFrame si nécessaire.
-    """
-    def apply_affine_dask(transcripts, transfo):
+def apply_affine_dask(transcripts, transfo):
         M = transfo.to_affine_matrix(
             input_axes=("x", "y"), 
             output_axes=("x", "y")) # NO .T transpose else we get issue !! .T # .T transpose or not ???
         return transcripts.map_partitions(_transform_coords, M)
 
+
+
+def _to_affine_shapely(M):
+    """Matrix transformation for a shapely polygon"""
+    a, b, xoff = M[0]
+    d, e, yoff = M[1]
+    return (a, b, d, e, xoff, yoff)
+
+
+def apply_affine_gpd(shape, transfo):
+    """Apply an affine transformation to a GeoDataFrame or a GeoSeries"""
+    M = transfo.to_affine_matrix(
+        input_axes=("x", "y"), 
+        output_axes=("x", "y")) # .T transpose or not ???
+    A = _to_affine_shapely(M)
+    return shape.affine_transform(A)
+
+
+def compute_bounds_dask(transcripts, transfo, scale=False):
+    """Apply a transformation to a Dask DataFrame"""
     if not (isinstance(transfo, Identity) or isinstance(transfo, Scale) and not scale):
         if isinstance(transfo, Sequence):
             if scale:
@@ -50,24 +59,14 @@ def compute_bounds_dask(transcripts, transfo, scale=False):
 
 def compute_bounds_gpd(shape, transfo, scale=False):
     """
-    Calcule les bounds xmin, ymin, xmax, ymax selon la transformation appliquée.
+    Computes the bounds (xmin, ymin, xmax, ymax) based on the applied transformation.
     """
-    # IF apply_affine is only used with compute bounds ==> stay here !! 
-    # otherwise ==> new functions outside compute_bounds ++
-    def apply_affine_gpd(shape, transfo):
-        """Applique une transformation affine à un GeoDataFrame / GeoSeries."""
-        M = transfo.to_affine_matrix(
-            input_axes=("x", "y"), 
-            output_axes=("x", "y")) # .T transpose or not ???
-        A = _to_affine_shapely(M)
-        return shape.affine_transform(A).total_bounds
-
     if (isinstance(transfo, Identity)) or (isinstance(transfo, Scale) and not scale):
         return shape.total_bounds
 
     elif isinstance(transfo, Sequence):
         if scale:
-            return apply_affine_gpd(shape, transfo)
+            return apply_affine_gpd(shape, transfo).total_bounds
         else:
             # ignored scale in sequence
             new_tr = [t for t in transfo.transformations if not isinstance(t, Scale)]
@@ -77,7 +76,7 @@ def compute_bounds_gpd(shape, transfo, scale=False):
                 transfo_to_apply = new_tr[0]
             else:
                 transfo_to_apply = Sequence(new_tr)
-            return apply_affine_gpd(shape, transfo_to_apply)
+            return apply_affine_gpd(shape, transfo_to_apply).total_bounds
     else:
-        return apply_affine_gpd(shape, transfo)
+        return apply_affine_gpd(shape, transfo).total_bounds
 
