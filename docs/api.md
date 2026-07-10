@@ -28,11 +28,11 @@ import sparty as spt
 .. autosummary::
     :toctree: generated
 
-    pp.run_scanpy
-    pp.subsetSamples
-    pp.metrics_summary
-    pp.subset_transcripts
-    pp.compute_gene_compartment_percentages
+    run_scanpy
+    subsetSamples
+    metrics_summary
+    subset_transcripts
+    compute_gene_compartment_percentages
 ```
 
 
@@ -51,7 +51,7 @@ import sparty as spt
 ## Plotting
 
 ```{eval-rst}
-.. currentmodule:: sparty.pl
+.. currentmodule:: sparty
 
 .. autosummary::
     :toctree: generated
