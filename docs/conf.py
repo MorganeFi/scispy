@@ -99,9 +99,11 @@ intersphinx_mapping = {
     # TODO: replace `3.13` with `3` once ReadTheDocs supports building with Python 3.14
     # "python": ("https://docs.python.org/3.13", None),
     "python": ("https://docs.python.org/3", None),
-    "anndata": ("https://anndata.readthedocs.io/en/stable/", None),
-    "scanpy": ("https://scanpy.readthedocs.io/en/stable/", None),
-    "numpy": ("https://numpy.org/doc/stable/", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
+    "shapely": ("https://shapely.readthedocs.io/en/stable", None),
+    "scanpy": ("https://scanpy.readthedocs.io/en/stable", None),
+    "anndata": ("https://anndata.readthedocs.io/en/stable", None),
     "spatialdata": ("https://spatialdata.scverse.org/en/stable", None),
 }
 
