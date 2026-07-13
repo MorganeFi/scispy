@@ -1,5 +1,5 @@
 
-![Sparty banner](https://github.com/cobioda/sparty/docs/_static/images/logo.png?raw=true)
+![Sparty banner](https://github.com/MorganeFi/sparty/blob/main/docs/_static/images/logo.png?raw=true)
 
 <div align="center">
 
@@ -31,7 +31,7 @@
 </p>
 
 <p align="center">
-  <img src="https://github.com/cobioda/sparty/docs/images/logo.png" width="300px">
+  <img src="https://github.com/MorganeFi/sparty/blob/main/docs/_static/images/logo.png" width="300px">
 </p>
 
 ## Features
