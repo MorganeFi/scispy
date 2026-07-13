@@ -123,6 +123,8 @@ html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
 
 html_title = project
+html_logo = "_static/images/logo.png"
+html_favicon = "_static/images/logo.png"
 
 html_theme_options = {
     "repository_url": repository_url,

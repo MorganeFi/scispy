@@ -11,7 +11,7 @@ import anndata as ad
 # from ..pl._shapes import plot_shapes
 from ..tl.alpha_shape import alpha_shape_optimal
 
-# from shapely.geometry import Polygon
+# from shapely import Polygon
 # from spatialdata.models import PointsModel
 # from shapely import affinity
 # from scipy.sparse import csr_matrix
