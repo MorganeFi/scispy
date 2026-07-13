@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from shapely.geometry import Polygon
+from shapely import Polygon
 from shapely.plotting import plot_polygon
 import math
 import numpy as np

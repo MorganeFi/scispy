@@ -12,8 +12,7 @@ import spatialdata as sd
 from matplotlib import pyplot as plt
 from pydeseq2.dds import DeseqDataSet
 from pydeseq2.ds import DeseqStats
-from shapely.geometry import Polygon
-from shapely import LineString, Point, get_coordinates, affinity
+from shapely import LineString, Point, get_coordinates, affinity, Polygon
 from spatialdata import SpatialData
 from spatialdata.models import PointsModel, ShapesModel
 from spatialdata.transformations import Affine, Identity, Translation, set_transformation, get_transformation, Sequence
