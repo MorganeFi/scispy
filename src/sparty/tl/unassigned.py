@@ -136,7 +136,18 @@ def unassigned_RNA(
     add_bin_shape: bool = False,
     only_scale: bool = False,
     target_coordinates: str ='global',
-):
+) -> ad.AnnData | None :
+    """
+    Create bins for unassigned transcripts.
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     print('1) Start by subseting all valid transcripts...')
     data = subset_transcripts(
         sdata=sdata,

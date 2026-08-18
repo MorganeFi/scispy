@@ -3,7 +3,7 @@ from .basic import (
     add_to_points,
     # add_to_shapes,
     get_sdata_polygon,
-    prep_pseudobulk,
+    # prep_pseudobulk,
     pseudobulk,
     sdata_querybox,
     sdata_rotate,
@@ -34,13 +34,16 @@ from .unassigned import (
     unassigned_RNA,
 )
 
+from .subcellular import (
+    compute_transcript_nucleus_distance,
+)
 
 __all__ = [
     "add_shapes_from_hdf5",
     "add_to_points",
     "add_to_shapes",
     "get_sdata_polygon",
-    "prep_pseudobulk",
+    # "prep_pseudobulk",
     "pseudobulk",
     "sdata_rotate",
     "sdata_querybox",
@@ -55,5 +58,6 @@ __all__ = [
     "shape_to_pseudobulk",
     "alpha_shape_optimal",
     # "create_shapes",
-    "unassigned_RNA"
+    "unassigned_RNA",
+    "compute_transcript_nucleus_distance",
 ]

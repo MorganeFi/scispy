@@ -5,16 +5,328 @@ import geopandas as gpd
 import spatialdata as sd
 import re
 from spatialdata.transformations import get_transformation #, Identity, Sequence
-# from spatialdata.transformations.transformations import , Sequence, Identity
-# import pandas as pd 
 from matplotlib import gridspec
 import matplotlib.colors as mcolors
 import math
+# from matplotlib.patches import FancyArrow
+# from matplotlib.transforms import blended_transform_factory
 
 from ..pp.density import density_count_genes, _count_dens, compute_coloc  
 from ..pp.transcripts import subset_transcripts
-# from matplotlib.patches import FancyArrow
-# from matplotlib.transforms import blended_transform_factory
+
+from .._validation import (
+    _assert_dict_of_spatialdata,
+    _assert_table_in_sdata,
+    _assert_element_in_sdata,
+    _assert_gene_in_panel,
+)
+
+
+def _normalize_sdatas(
+    sdatas: sd.SpatialData | dict[str, sd.SpatialData],
+    default_key: str = "unique",
+) -> dict[str, sd.SpatialData]:
+    """Normalize input to dict[str, SpatialData], Sparty's standard convention.
+ 
+    A single SpatialData is automatically wrapped under the `default_key` key.
+    """
+    if isinstance(sdatas, sd.SpatialData):
+        print(f"Single SpatialData provided: wrapping as {{'{default_key}': sdata}}")
+        return {default_key: sdatas}
+    if not isinstance(sdatas, dict):
+        raise TypeError(
+            f"'sdatas' must be a SpatialData or dict[str, SpatialData], got {type(sdatas)}."
+        )
+    return sdatas
+
+def _resolve_colorbar(
+    colorbar: str | None,
+    genes: list | str | None,
+    isoform: str | None,
+    by_codeword: bool,
+    only_outside: bool,
+) -> str:
+    """Resolve the colorbar mode ('rows' or 'global') and print the reason."""
+    if colorbar is not None:
+        print(f"The colorbar has been defined as '{colorbar}'.")
+        return colorbar
+ 
+    if isoform:
+        colorbar = "global"
+        print("Isoform plotting: setting colorbar to 'global'.")
+    elif genes and by_codeword:
+        colorbar = "global"
+        print("Gene plotting by codeword: setting colorbar to 'global'.")
+    elif genes:
+        colorbar = "rows"
+        print("Gene plotting: setting colorbar to 'rows'.")
+    elif only_outside:
+        colorbar = "rows"
+        print("Unassigned RNA plotting: setting colorbar to 'rows'.")
+    else:
+        # genes is None and isoform is None: plot everything (total density)
+        colorbar = "global"
+        print("No genes/isoform provided: plotting total transcript density (colorbar='global').")
+ 
+    return colorbar
+
+
+def _plot_density_grid(
+    res: dict,
+    sample_list: list,
+    gene_names: list,
+    colorbar: str,
+    cmap,
+    background: str,
+    origin: str,
+    hspace: float,
+    wspace: float,
+    subplot_size: tuple,
+    save: str | None,
+    dpi: int,
+):
+    """Render the grid of density heatmaps (genes x samples) with colorbar(s)."""
+    cmap.set_under(background)
+ 
+    ncols = len(sample_list)
+    nrows = len(gene_names)
+ 
+    fig = plt.figure(figsize=(subplot_size[0] * ncols, subplot_size[1] * nrows))
+    plt.subplots_adjust(hspace=hspace, wspace=wspace)
+ 
+    axes = [[None] * ncols for _ in range(nrows)]
+    images = [[None] * ncols for _ in range(nrows)]
+ 
+    if colorbar == "rows":
+        global_vmax = {gene: max(res[s][gene][1] for s in sample_list) for gene in gene_names}
+    else:
+        global_vmax = max(v[1] for sample in res.values() for v in sample.values())
+ 
+    for i, gene in enumerate(gene_names):
+        for j, sample in enumerate(sample_list):
+            heatmap = res[sample][gene][0]
+
+            ax = fig.add_subplot(nrows, ncols, i * ncols + j + 1)
+            axes[i][j] = ax
+ 
+            vmax = global_vmax[gene] if colorbar == "rows" else global_vmax
+ 
+            img = ax.imshow(heatmap, cmap=cmap, origin=origin, vmax=vmax, vmin=0)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            ax.set_frame_on(False)
+ 
+            if i == 0:
+                ax.set_title(sample)
+            if j == 0:
+                ax.set_ylabel(gene, fontsize=12, rotation=90, labelpad=10)
+ 
+            images[i][j] = img
+ 
+    if colorbar == "global":
+        fig.colorbar(
+            images[0][0],
+            ax=[ax for row in axes for ax in row],
+            location="right",
+            fraction=0.03,
+            pad=0.02,
+            label="Counts",
+        )
+    else:
+        for i, gene in enumerate(gene_names):
+            fig.colorbar(
+                images[i][0],
+                ax=axes[i],
+                location="right",
+                fraction=0.03,
+                pad=0.02,
+                label="Counts",
+            )
+ 
+    if isinstance(save, str):
+        plt.savefig(save, bbox_inches="tight", dpi=dpi)
+    plt.show()
+
+    
+def density(
+    sdatas: sd.SpatialData | list[sd.SpatialData], 
+    genes: list | str | None,
+    isoform: str = None,
+    sample_list: list = None,
+    polygon: shapely.Polygon = None,
+    shape_key: str = 'cell_boundaries',
+    transcript_key: str = 'transcripts',
+    table_key: str = 'table',
+    feature_key: str = None,
+    bin_size_um: float = 10.0,
+    density_kde: bool = False,
+    nb_grid: int = 200j, 
+    smooth: float = 1.0,
+    pct_max: int = 99,
+    box_bounds: dict | list | tuple = None,
+    only_in_cell: bool = False, 
+    only_outside: bool = False,
+    techno: str = "Xenium", # 'Xenium' or 'Merscope'
+    clip_outside: bool = False,
+    colorbar: str = None, # "indiv", "rows", "global"
+    by_codeword: bool = False,
+    cmap = plt.cm.Reds,
+    background: str = "black", # "white"
+    scale: bool = False, # str = 'microns', # pixels # True /False
+    origin: str = 'upper', # or lower 
+    hspace: float = 0.5, 
+    wspace: float = 0.5,
+    subplot_size: tuple = (4, 4),
+    aggregate: bool = False,
+    save: str | None = None,
+    dpi: int = 300
+):  
+    """Plot spatial transcript density maps, per gene and per sample.
+ 
+    Two estimation modes are available, controlled by `density_kde`:
+ 
+    - ``density_kde=False`` (default): histogram mode. Transcripts are
+      binned into `bin_size_um`-sized square bins and counted
+      (`np.histogram2d`). This returns **raw counts per bin**, not a
+      normalized density (bins are not divided by their area). Since
+      `bin_size_um` is constant across the grid, these counts are
+      proportional to a true density (transcripts/µm²) — only the scale
+      differs, not the spatial pattern. This is the conventional meaning
+      of "density map" in spatial-omics (Xenium/MERFISH), even though it
+      is not a density in the strict statistical sense.
+    - ``density_kde=True``: kernel density estimation (`gaussian_kde`) on
+      a `nb_grid` x `nb_grid` grid, smoothed by `smooth`. This is a true,
+      normalized probability density.
+ 
+    Parameters
+    ----------
+    sdatas
+        A single SpatialData, or a dict[str, SpatialData] mapping sample
+        name to SpatialData (Sparty's standard multi-sample convention).
+        A single SpatialData is auto-wrapped as ``{"unique": sdata}``.
+    genes
+        Gene(s) to plot. If both `genes` and `isoform` are None, the total
+        transcript density (all transcripts) is plotted instead.
+    isoform
+        Regex pattern matched against `var_names` to select isoforms.
+    sample_list
+        Subset of sample names (keys of `sdatas`) to plot. Defaults to all
+        samples in `sdatas`.
+    density_kde, smooth, nb_grid, bin_size_um
+        See estimation modes above.
+    colorbar
+        ``"rows"`` (one scale per gene, shared across samples) or
+        ``"global"`` (one scale for the whole figure). Auto-resolved from
+        context if not provided (see `_resolve_colorbar`).
+    pct_max
+        Percentile (0-100) used to clip the colormap's upper bound, so a
+        few extreme/outlier bins don't wash out the rest of the heatmap.
+        Default 99 clips at the 99th percentile of bin values instead of
+        the true max.
+    by_codeword
+        If True, plot raw per-codeword counts for a single gene instead
+        of per-cell-assigned transcript counts — requires exactly one
+        gene in `genes`. Forces `colorbar="global"` unless overridden.
+        
+    Returns
+    -------
+    None. Displays (and optionally saves) the figure.
+    """
+    sdatas = _normalize_sdatas(sdatas)
+    if sample_list is None:
+        sample_list = list(sdatas.keys())
+
+    _assert_dict_of_spatialdata(sdatas)
+    missing_samples = set(sample_list) - set(sdatas.keys())
+    if missing_samples:
+        raise KeyError(
+            f"Sample(s) {missing_samples} not found in 'sdatas'. "
+            f"Available samples: {list(sdatas.keys())}."
+        )
+
+    if by_codeword and genes and len(genes) != 1:
+        raise ValueError("Please provide only one gene when using by_codeword.")
+
+    if density_kde:
+        print(f"Using KDE density estimation with a smooth parameter of {smooth}.")
+    else:
+        print("Using histogram density estimation.")
+    
+    colorbar = _resolve_colorbar(colorbar, genes, isoform, by_codeword, only_outside)
+    
+    res = {}
+    global_vmax = 0
+
+    for sample in sample_list:
+        sdata = sdatas[sample]
+        adata = _assert_table_in_sdata(sdata, table_key)
+        
+        if techno == "Merscope":
+            shape_key = list(sdata.shapes.keys())[0]
+            transcript_key = list(sdata.points.keys())[0]
+
+        _assert_element_in_sdata(sdata.shapes, shape_key)
+        _assert_element_in_sdata(sdata.points, transcript_key)
+
+        if isoform:
+            genes = list(
+                filter(lambda x: re.search(isoform, x), adata.var_names))
+            print(f"Found those isoforms for sample {sample}:", genes)
+        elif genes:
+            _assert_gene_in_panel(adata, genes)
+
+        if isinstance(box_bounds, dict):
+            sample_box_bounds = box_bounds.get(sample) # None or list positions
+        elif isinstance(box_bounds, (list, tuple)):
+            sample_box_bounds = box_bounds
+        else:
+            sample_box_bounds = None
+
+        results, _ = density_count_genes(    
+            sdata=sdata, 
+            genes=genes, 
+            polygon=polygon, 
+            shape_key=shape_key, 
+            transcript_key=transcript_key,
+            nb_grid=nb_grid,
+            techno=techno,
+            smooth=smooth,
+            feature_key=feature_key,
+            bin_size_um=bin_size_um, 
+            box_bounds = sample_box_bounds,
+            only_in_cell=only_in_cell,
+            only_outside=only_outside,
+            density_kde=density_kde,
+            scale=scale,
+            pct_max=pct_max,
+            clip_outside=clip_outside,
+            by_codeword=by_codeword,
+            aggregate=aggregate,
+            )
+        vmax = max([v[1] for v in results.values()])
+        global_vmax = max(global_vmax, vmax)
+        res[sample] = results
+    
+    gene_names = list(list(res.values())[0].keys())
+    
+    if genes and (set(genes) - set(gene_names)) and (not aggregate) and (not only_outside):
+        missing = set(genes) - set(gene_names)
+        print(f"Warning: Some genes ({missing}) were not found in the data and will be skipped.")
+
+    _plot_density_grid(
+        res=res,
+        sample_list=sample_list,
+        gene_names=gene_names,
+        colorbar=colorbar,
+        cmap=cmap,
+        background=background,
+        origin=origin,
+        hspace=hspace,
+        wspace=wspace,
+        subplot_size=subplot_size,
+        save=save,
+        dpi=dpi,
+    )
 
 
 def plot_density(
@@ -28,7 +340,7 @@ def plot_density(
     transcript_key: str = 'transcripts',
     table_key: str = 'table',
     nb_grid: int = 200j, 
-    feature_key: str = 'feature_name',
+    feature_key: str = None,
     density_kde: bool = False,
     smooth: float = 1.0,
     pct_max: int = 99,
@@ -48,7 +360,8 @@ def plot_density(
     aggregate: bool = False,
     save: str | None = None,
     dpi: int = 300
-):
+):  
+
     if not isinstance(sdatas, list): 
         sdatas = [sdatas]
     # if not isinstance(genes, list): 
@@ -201,7 +514,7 @@ def plot_density(
 
 
 
-def BlendMatrix(
+def _BlendMatrix(
     n=10,
     col_threshold=0.5,
     two_colors=("#ff0000", "#00ff00"),
@@ -455,7 +768,7 @@ def colocalization(
     # fig.subplots_adjust(right=0.88)
 
     ax = fig.add_subplot(nrows, ncols, j + 2)
-    blend_img = BlendMatrix(
+    blend_img = _BlendMatrix(
         n=10, two_colors=(color_map[channels[0]][1], color_map[channels[1]][1]),
         background=background)
     draw_blend_matrix(

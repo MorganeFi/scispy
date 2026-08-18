@@ -18,19 +18,19 @@ from ..colors import get_palette
 
 from ..tl.basic import sdata_rotate, add_to_points
 
-sc.set_figure_params(vector_friendly=True, dpi=300, dpi_save=300) 
-plt.rcParams.update(
-    {'ps.fonttype':42,
-    'ps.fonttype': 42, 
-    'pdf.fonttype': 42, 
-    'font.size': 10, 
-    'font.family': 'Arial', 
-    'mathtext.fontset': 'cm', 
-    'mathtext.rm': 'Arial',
-    'lines.linewidth': .2, 
-    'xtick.top': False, 
-    'ytick.right': False}
-)
+# sc.set_figure_params(vector_friendly=True, dpi=300, dpi_save=300) 
+# plt.rcParams.update(
+#     {'ps.fonttype':42,
+#     'ps.fonttype': 42, 
+#     'pdf.fonttype': 42, 
+#     'font.size': 10, 
+#     'font.family': 'Arial', 
+#     'mathtext.fontset': 'cm', 
+#     'mathtext.rm': 'Arial',
+#     'lines.linewidth': .2, 
+#     'xtick.top': False, 
+#     'ytick.right': False}
+# )
 
 def plot_mecr(
         adata: ad.AnnData,
@@ -61,74 +61,6 @@ def plot_mecr(
     plt.title(f'MECR score between {g1} - {g2} : {round(mecr, 3)}')
     plt.show()
 
-
-# def plot_shapes(
-#     sdata: sd.SpatialData,
-#     group_lst: tuple = None,  # the cell types to consider
-#     shapes_lst: tuple = None,  # the shapes to plot
-#     color_key: str = "celltype_spatial",
-#     shape_key: str = "arteries",
-#     target_coordinates: str = "microns",
-#     figsize: tuple = (12, 6),
-#     palette: tuple = None,
-#     save: bool = False,
-# ):
-#     """Plot list of shapes
-
-#     Parameters
-#     ----------
-#     sdata
-#         SpatialData object obtained by tl.get_sdata_polygon()
-#     group_lst
-#         group list to consider (related to label_obs_key)
-#     shapes_lst
-#         shapes list to plot
-#     color_key
-#         label_key in sdata['table'].obs to consider
-#     shape_key
-#         SpatialData shape element to consider
-#     palette
-#         dictionary of colors to use
-#     target_coordinates
-#         target_coordinates system of sdata object
-#     figsize
-#         figure size
-#     save
-#         wether or not to save the figure
-
-#     """
-#     region_key = sdata['table'].uns["spatialdata_attrs"]["region"]
-#     my_shapes = {region_key: sdata[region_key], shape_key: sdata[shape_key]}
-#     my_tables = {"table": sdata["table"]}
-#     sdata2 = SpatialData(shapes=my_shapes, tables=my_tables)
-
-#     fig, axs = plt.subplots(ncols=len(shapes_lst), nrows=1, figsize=figsize)
-#     for i in range(0, len(shapes_lst)):
-#         poly = sdata2[shape_key][sdata2[shape_key].name == shapes_lst[i]].geometry.item()
-#         sdata3 = sd.polygon_query(
-#             sdata2,
-#             poly,
-#             target_coordinate_system=target_coordinates,
-#             filter_table=True,
-#         )
-
-#         # sdata3.pl.render_images().pl.show(ax=axs[i])
-#         if group_lst is None:
-#             group_lst = sdata2['table'].obs[color_key].unique().tolist()
-
-#         if palette is not None:
-#             mypal = [palette[x] for x in group_lst]
-#             sdata3.pl.render_shapes(elements=region_key, color=color_key, groups=group_lst, palette=mypal).pl.show(
-#                 ax=axs[i]
-#             )
-#         else:
-#             sdata3.pl.render_shapes(elements=region_key, color=color_key, groups=group_lst).pl.show(ax=axs[i])
-
-#         axs[i].set_title(shapes_lst[i])
-#         if i < len(shapes_lst) - 1:
-#             axs[i].get_legend().remove()
-
-#     plt.tight_layout()
 
 
 def plot_shape_along_axis(
@@ -405,40 +337,6 @@ def plot_multi_sdata(
     if save is True:
         print("saving plot_multi_sdata.pdf")
         plt.savefig("plot_multi_sdata.pdf", format="pdf", bbox_inches="tight")
-
-
-def plot_qc(sdata: sd.SpatialData):
-    """Plot quality control analysis.
-
-    Parameters
-    ----------
-    sdata
-        SpatialData object.
-
-    """
-    dataset_id = sdata['table'].obs.dataset_id.unique().tolist()[0]
-
-    fig, ax = plt.subplots(figsize=(6, 5))
-    plt.subplot(2, 2, 1)
-    bins = np.logspace(0, 4, 100)
-    plt.hist(sdata['table'].obs["volume"], alpha=0.2, bins=bins, label=dataset_id, color="red")
-    plt.xlabel("Volume")
-    plt.ylabel("Cell count")
-    plt.xscale("log")
-    # Transcript count by cell
-    plt.subplot(2, 2, 2)
-    bins = np.logspace(0, 4, 100)
-    plt.hist(sdata['table'].obs["transcript_count"], alpha=0.2, bins=bins, label=dataset_id, color="red")
-    plt.xlabel("Transcript count")
-    plt.ylabel("Cell count")
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.subplot(2, 2, 3)
-    barcodeCount = sdata['table'].obs["transcript_count"]
-    sns.distplot(barcodeCount, label=dataset_id, color="red")
-    ax1 = plt.subplot(2, 2, 4)
-    sc.pl.violin(sdata['table'].obs, keys="transcript_count", ax=ax1)
-    plt.tight_layout()
 
 
 def plot_per_groups(adata, clust_key, size=60, is_spatial=False, frameon=False, legend_loc=None, **kwargs):

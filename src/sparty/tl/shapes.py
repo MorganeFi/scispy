@@ -44,6 +44,9 @@ def add_to_shapes(
     target_coordinates
         target_coordinates system
 
+    Returns
+    -------
+        to be completed
     """
     if shape_key in sdata.shapes:
         print(f'Shape "{shape_key}" is already present in the object.')
@@ -104,6 +107,7 @@ def add_metadata_to_shape(
     obs_key: list,
     shape_key: str = "myshapes",
     target_coordinates="microns",
+    table_key:str = 'table',
     right_on: str = None,
 ):
     """Add metadata to a shape in the sdata.shape.keys()
@@ -117,10 +121,13 @@ def add_metadata_to_shape(
     shape_key
         key of element shape
 
-    Return
-    ----------
+    Returns
+    -------
     Add some metadata in element shape.
     """
+    if isinstance(obs_key, str):
+        obs_key = [obs_key]
+        
     for key in obs_key:
         if key in sdata.shapes[shape_key].columns:
             print(f'This column "{key}" is already present in the shape.')
@@ -130,12 +137,12 @@ def add_metadata_to_shape(
     if right_on:
         obs_key.append(right_on)
         gdf = sdata.shapes[shape_key].merge(
-            sdata['table'].obs[obs_key], 
+            sdata[table_key].obs[obs_key], 
             how="left", left_index=True, right_on = right_on
         )
     else:
         gdf = sdata.shapes[shape_key].merge(
-            sdata['table'].obs[obs_key], 
+            sdata[table_key].obs[obs_key], 
             how="left", left_index=True, right_index=True
         )
 
@@ -296,7 +303,18 @@ def shape_to_pseudobulk(
     distances_key: str ='spatial_distances',
     neighs_key: str ='spatial_neighbors',    
     save: bool = True,
-):
+) -> ad.AnnData:
+    """
+    Create anndata by shape.
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     if not samples:
         samples = list(sdata.tables.keys())
     print(len(samples))

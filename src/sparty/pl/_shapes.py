@@ -3,6 +3,7 @@ from shapely import Polygon
 from shapely.plotting import plot_polygon
 import math
 import numpy as np
+# from squidpy._docs import d
 
 
 def plot_cells_dict(
@@ -29,6 +30,12 @@ def plot_cells_dict(
         Number of columns in subplot grid
     figsize_per_subplot : tuple
         Size of each subplot
+
+    Plot top `n_top` expressed genes.
+
+    Returns
+    -------
+        to be completed
     """
 
     # cellules communes (sécurité)
@@ -145,6 +152,17 @@ def plot_gene_in_cells(
     figsize_per_subplot:tuple = (5, 5),
     # GENE_EXCLUDE_PATTERN = "Unassigned.*|Deprecated.*|Intergenic.*|Neg.*",
 ):
+    """
+    Visualize transcripts in cells for a subset of `max_cells_to_plot` for a specific group.
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     if list_of_cells is None:
         list_of_cells = sdata[table_key].obs.loc[sdata[table_key].obs[groupby] == group, cell_id].tolist()
 
@@ -182,6 +200,76 @@ def plot_gene_in_cells(
     )
 
 
+# def plot_shapes(
+#     sdata: sd.SpatialData,
+#     group_lst: tuple = None,  # the cell types to consider
+#     shapes_lst: tuple = None,  # the shapes to plot
+#     color_key: str = "celltype_spatial",
+#     shape_key: str = "arteries",
+#     target_coordinates: str = "microns",
+#     figsize: tuple = (12, 6),
+#     palette: tuple = None,
+#     save: bool = False,
+# ):
+#     """Plot list of shapes
+
+#     Parameters
+#     ----------
+#     sdata
+#         SpatialData object obtained by tl.get_sdata_polygon()
+#     group_lst
+#         group list to consider (related to label_obs_key)
+#     shapes_lst
+#         shapes list to plot
+#     color_key
+#         label_key in sdata['table'].obs to consider
+#     shape_key
+#         SpatialData shape element to consider
+#     palette
+#         dictionary of colors to use
+#     target_coordinates
+#         target_coordinates system of sdata object
+#     figsize
+#         figure size
+#     save
+#         wether or not to save the figure
+
+#     """
+#     region_key = sdata['table'].uns["spatialdata_attrs"]["region"]
+#     my_shapes = {region_key: sdata[region_key], shape_key: sdata[shape_key]}
+#     my_tables = {"table": sdata["table"]}
+#     sdata2 = SpatialData(shapes=my_shapes, tables=my_tables)
+
+#     fig, axs = plt.subplots(ncols=len(shapes_lst), nrows=1, figsize=figsize)
+#     for i in range(0, len(shapes_lst)):
+#         poly = sdata2[shape_key][sdata2[shape_key].name == shapes_lst[i]].geometry.item()
+#         sdata3 = sd.polygon_query(
+#             sdata2,
+#             poly,
+#             target_coordinate_system=target_coordinates,
+#             filter_table=True,
+#         )
+
+#         # sdata3.pl.render_images().pl.show(ax=axs[i])
+#         if group_lst is None:
+#             group_lst = sdata2['table'].obs[color_key].unique().tolist()
+
+#         if palette is not None:
+#             mypal = [palette[x] for x in group_lst]
+#             sdata3.pl.render_shapes(elements=region_key, color=color_key, groups=group_lst, palette=mypal).pl.show(
+#                 ax=axs[i]
+#             )
+#         else:
+#             sdata3.pl.render_shapes(elements=region_key, color=color_key, groups=group_lst).pl.show(ax=axs[i])
+
+#         axs[i].set_title(shapes_lst[i])
+#         if i < len(shapes_lst) - 1:
+#             axs[i].get_legend().remove()
+
+#     plt.tight_layout()
+
+
+
 def plot_cells_list(
     cells, 
     nucls, 
@@ -192,12 +280,17 @@ def plot_cells_list(
     """
     Plots a list of cells and nuclei in subplots.
     
-    Parameters:
+    Parameters
+    ----------
     - cells: list of arrays/lists/Polygons
     - nucls: list of arrays/lists/Polygons
     - ncols: number of columns in the grid
     - figsize_per_subplot: size of each subplot (tuple)
     #- figsize: figure size (tuple)
+
+    Returns
+    -------
+        to be completed
     """
     n = len(cells)
     nrows = math.ceil(n / ncols)
@@ -254,6 +347,123 @@ def plot_cells_list(
     plt.tight_layout()
     plt.show()
 
+def outlines( # or shapes
+    shapes: dict,
+    centerlines: dict = None,
+    ncols: int = 4,
+    figsize_per_plot: tuple = (5, 5),
+    linewidth: float = 1.5,
+    show_axis: bool = False,
+    plot_interiors: bool = False,
+    color_shape: str = "black",
+    color_line: str = "red",
+    show: bool = True,
+    return_fig: bool = False,
+    save: str | None = None,
+    dpi: int = 300
+):
+    """
+    Plot shapely polygons stored in a dictionary, with optional centerlines.
+
+    Parameters
+    ----------
+    shapes : dict
+        Dictionary {shape_name: shapely.Polygon}.
+    centerlines : dict, optional
+        Dictionary {shape_name: shapely.LineString}. Keys should match
+        (fully or partially) those of `shapes`. If a shape has no associated
+        centerline, it is simply plotted without a line.
+    ncols : int
+        Number of columns for the subplot grid (ignored if there is only one shape).
+    figsize_per_plot : tuple
+        Size (width, height) allocated per subplot.
+    linewidth : float
+        Line width.
+    show_axis : bool
+        If False, hides the axes (ticks, labels, frame).
+    plot_interiors : bool
+        If True, also plots the holes (interiors) of the polygons, separately
+        from the exterior to avoid spurious connecting lines. False by default.
+    color_shape : str
+        Color of the shape outline (exterior + interiors).
+    color_line : str
+        Color of the centerline.
+    show : bool
+        If True, displays the figure with plt.show().
+    return_fig : bool
+        If True, returns the matplotlib Figure object.
+    save : str, optional
+        File path to save the figure (e.g. "out.png"). None = no saving.
+    dpi : int
+        Resolution for saving (ignored if save=None).
+
+    Returns
+    -------
+    fig or None
+        The matplotlib figure if return_fig=True, otherwise None.
+    """
+    if centerlines is None:
+        centerlines = {}
+
+    n_shapes = len(shapes)
+
+    if n_shapes == 1:
+        name, polygon = next(iter(shapes.items()))
+        fig, ax = plt.subplots(figsize=figsize_per_plot)
+        _plot_single_shape(
+            ax, polygon, centerlines.get(name), name, linewidth, show_axis,
+            plot_interiors, color_shape, color_line,
+        )
+       
+    else:
+        nrows = n_shapes // ncols + (n_shapes % ncols > 0)
+
+        fig = plt.figure(figsize=(figsize_per_plot[0] * ncols, figsize_per_plot[1] * nrows))
+        plt.subplots_adjust(hspace=0.5, wspace=0.25)
+
+        for i, (name, polygon) in enumerate(shapes.items(), start=1):
+            ax = plt.subplot(nrows, ncols, i)
+            _plot_single_shape(
+                ax, polygon, centerlines.get(name), name, linewidth, show_axis,
+                plot_interiors, color_shape, color_line,
+            )
+
+    if isinstance(save, str):
+        plt.savefig(save, bbox_inches="tight", dpi=dpi)
+    if show:
+        plt.show()
+    if return_fig:
+        return fig
+
+
+
+
+def _plot_single_shape(
+    ax, polygon, centerline, name, linewidth, show_axis,
+    plot_interiors, color_shape, color_line,
+):
+    """Helper interne : trace une polygon + centerline optionnelle sur un ax donné."""
+    x, y = polygon.exterior.xy
+    ax.plot(x, y, c=color_shape, linewidth=linewidth)
+
+    if plot_interiors:
+        for interior in polygon.interiors:
+            x, y = interior.xy
+            ax.plot(x, y, c=color_shape, linewidth=linewidth)
+
+    if centerline is not None:
+        x, y = centerline.xy
+        ax.plot(
+            x, y,
+            "-", c=color_line, linewidth=linewidth,
+        )
+
+    ax.set_title(name, fontsize=20)
+    ax.set_aspect("equal")
+
+    if not show_axis:
+        ax.axis("off")
+
 
 def plot_shapes(shapes: dict, ncols: int = 4):
     """
@@ -265,6 +475,10 @@ def plot_shapes(shapes: dict, ncols: int = 4):
         Dictionary {shape_name: shapely.Polygon}
     ncols : int
         Number of columns for subplot grid.
+
+    Returns
+    -------
+        to be completed  
     """
     n_shapes = len(shapes)
     nrows = n_shapes // ncols + (n_shapes % ncols > 0)
@@ -290,7 +504,7 @@ def plot_shape(
     plot_points = False,
     return_y_axis = True,
     figsize=(5,5),
-):  
+) -> None:  
     """
     Plot one shape
     """
@@ -330,7 +544,7 @@ def plot_cells(
     figsize=(6,6), 
     pt_cell=25, 
     pt_nucl=7
-):
+) -> None:
     plt.figure(figsize=figsize)
     plt.plot(cell1[:pt_cell,0], cell1[:pt_cell,1], color='blue', label='cell1')
     plt.plot(cell2[:pt_cell,0], cell2[:pt_cell,1], color='red', label='cell2')
@@ -352,7 +566,18 @@ def plot_cell(
     cell,
     nucl,
     figsize=(5,5),
-):
+) -> None:
+    """
+    Plot cell with its nuclei.
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     if isinstance(cell, (np.ndarray, list, tuple)):
         cell_poly = Polygon(cell)
     else:

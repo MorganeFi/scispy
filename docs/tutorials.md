@@ -1,7 +1,7 @@
 # Tutorials
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
 :caption: Tutorials
 
 notebooks/00.TMA_samples_extraction

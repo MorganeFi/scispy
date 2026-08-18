@@ -2,7 +2,6 @@ import pandas as pd
 import geopandas as gpd
 import shapely
 
-
 from ..pl._shapes import plot_shapes
 
 def shapes_from_xe(
@@ -15,8 +14,13 @@ def shapes_from_xe(
     """
     Create polygons from a CSV file containing X/Y coordinates.
 
-    If the CSV has a 'Selection' column, one polygon is created per selection.
-    Otherwise, the whole file is treated as one polygon.
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
     """
     df = pd.read_csv(file, skiprows=2)
 

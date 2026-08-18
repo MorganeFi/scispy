@@ -7,6 +7,17 @@ def plot_shapes(
     figsize=(5,5),
     ncols = 2,
 ):
+    """
+    Plot shape
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     if poly.geom_type == 'Polygon':
         plt.figure(1, figsize=figsize)
         plt.plot(*poly.boundary.xy, c='red')
@@ -35,15 +46,15 @@ def plot_shapes(
         print('Shape is not a polygon or a multipolygon')
 
 
-def plot_genes_expr_in_shapes(
-  sdata,
-#   along|orthogonal
-    genes: list,
-    group_by,
-    cell_type,
+# def plot_genes_expr_in_shapes(
+#   sdata,
+# #   along|orthogonal
+#     genes: list,
+#     group_by,
+#     cell_type,
 
-):
-    sdata
+# ):
+#     sdata
 
 
 

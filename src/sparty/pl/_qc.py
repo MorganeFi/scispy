@@ -5,11 +5,58 @@ import anndata as ad
 import pandas as pd
 import scanpy as sc 
 
+
+def plot_qc(sdata: sd.SpatialData):
+    """Plot quality control analysis.
+
+    Parameters
+    ----------
+    sdata
+        SpatialData object.
+
+    """
+    dataset_id = sdata['table'].obs.dataset_id.unique().tolist()[0]
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    plt.subplot(2, 2, 1)
+    bins = np.logspace(0, 4, 100)
+    plt.hist(sdata['table'].obs["volume"], alpha=0.2, bins=bins, label=dataset_id, color="red")
+    plt.xlabel("Volume")
+    plt.ylabel("Cell count")
+    plt.xscale("log")
+    # Transcript count by cell
+    plt.subplot(2, 2, 2)
+    bins = np.logspace(0, 4, 100)
+    plt.hist(sdata['table'].obs["transcript_count"], alpha=0.2, bins=bins, label=dataset_id, color="red")
+    plt.xlabel("Transcript count")
+    plt.ylabel("Cell count")
+    plt.xscale("log")
+    plt.yscale("log")
+    plt.subplot(2, 2, 3)
+    barcodeCount = sdata['table'].obs["transcript_count"]
+    sns.distplot(barcodeCount, label=dataset_id, color="red")
+    ax1 = plt.subplot(2, 2, 4)
+    sc.pl.violin(sdata['table'].obs, keys="transcript_count", ax=ax1)
+    plt.tight_layout()
+
+
+
 def plot_hist_QC(
     data: ad.AnnData | sd.SpatialData,
     table = 'table',
     figsize=(20, 4),
 ):  
+    """
+    Plot standard QC.
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     if type(data) == sd.SpatialData:
         adata = data[table].copy
     elif type(data) == ad.AnnData:
@@ -60,6 +107,17 @@ def top_genes_expressed(
     n_top: int = 20,
     figsize: tuple = (15, 6),
 ):
+    """
+    Plot top `n_top` expressed genes.
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     if isinstance(data, sd.SpatialData):
         adata = data[table].copy
     elif isinstance(data, ad.AnnData):

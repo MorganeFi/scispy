@@ -5,6 +5,7 @@ import geopandas as gpd
 from scipy.stats import gaussian_kde
 from spatialdata.transformations import get_transformation 
 # import dask.dataframe as dd
+from .._constants import XeniumKeys, MerscopeKeys, CosmxKeys
 
 from ..pp.transformations import compute_bounds_gpd
 from ..pp.transcripts import subset_transcripts
@@ -56,8 +57,8 @@ def density_count_genes(
     nb_grid: int = 200j, 
     techno: str = "Xenium", # 'Xenium' or 'Merscope'
     smooth: float = 1.0,
-    feature_key: str = 'feature_name',
     bin_size_um: float = 10.0,
+    feature_key: str = None,
     box_bounds: list | tuple = None,
     only_in_cell: bool = False,
     only_outside: bool = False,
@@ -67,7 +68,19 @@ def density_count_genes(
     clip_outside: bool = False,
     by_codeword: bool = False,
     aggregate: bool = False,
-):
+) -> tuple:
+    """
+    Create density matrix.
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
+
     if type(genes) == str:
         genes = [genes]
 
@@ -75,11 +88,20 @@ def density_count_genes(
         return_gpd = True
     else: 
         return_gpd = False # faster
-    
+
+    if feature_key is None:
+        feature_key = {
+            "Xenium": XeniumKeys.FEATURE_KEY,
+            "Merscope": MerscopeKeys.FEATURE_KEY,
+            "Cosmx": CosmxKeys.FEATURE_KEY,
+        }.get(techno)
+        if feature_key is None:
+            raise ValueError(f"No default feature_key for techno='{techno}', please specify one explicitly.")
+
     data = subset_transcripts(
         sdata=sdata,
         genes=genes,
-        feature_key=feature_key,
+        # feature_key=feature_key,
         transcript_key= transcript_key,
         techno=techno,
         only_in_cell=only_in_cell,
@@ -141,12 +163,13 @@ def density_count_genes(
             heatmap, xx, yy = _kde_dens(
                 x, y, xmax, xmin, ymax, ymin, nb_grid, smooth
             )
+            vmax = np.percentile(heatmap, pct_max)
         else:
             heatmap, xx, yy = _count_dens(
                 x, y, xmax, xmin, ymax, ymin, bin_size_um
             )
-
-        vmax = np.max([1, np.percentile(heatmap, pct_max)])
+            vmax = np.max([1, np.percentile(heatmap, pct_max)])
+        
         # if clip_outside:
         #     data = data[data.within(polygon)]
         #     heatmap[~data.values.reshape(xx.shape)] = np.nan  # mettre à 0 en dehors
@@ -163,10 +186,18 @@ def compute_coloc(
     table_key: str = "table",
     only_in_cell: bool = False,
     bin_size_um: int = 20,
-):
+) -> tuple:
     """
     Generate density heatmaps for 2 genes and return:
         heatmap1, heatmap2, xmin, xmax, ymin, ymax
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
     """
 
     if (not isinstance(genes, list)) or (len(genes) != 2):

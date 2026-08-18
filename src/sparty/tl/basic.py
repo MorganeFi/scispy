@@ -145,7 +145,10 @@ def add_to_points(
         y coordinate in sdata.table.obs to add as shape element y coordinate
     target_coordinates
         target_coordinates system of sdata object
-
+    
+    Returns
+    -------
+        to be completed
     """
     # can't do that
     # sdata['PGW9-2-2A_region_0_polygons']['cell_type'] = sdata.table.obs.cell_type
@@ -197,9 +200,10 @@ def get_sdata_polygon(
         target_coordinates system of sdata object
     figsize
         figure size
+
     Returns
     -------
-    sdata polygon object.
+        sdata polygon object.
     """
     poly = sdata[shape_key][sdata[shape_key][polygon_name_key] == polygon_name].geometry.item()
     sdata_poly = sd.polygon_query(
@@ -220,64 +224,6 @@ def get_sdata_polygon(
 
     return sdata_poly
 
-
-def prep_pseudobulk(
-    sdata: sd.SpatialData,
-    shape_key: str = "myshapes",
-    myname_key: str = "pseudoname",
-    mytype_key: str = "pseudotype",
-    target_coordinates: str = "microns",
-) -> sd.SpatialData:
-    """Prepare sdata.table.obs for tl.run_pseudobulk()
-
-    Parameters
-    ----------
-    sdata
-        SpatialData object.
-    shape_key
-        sdata shape element key where to find the polygon defining the zones with "name" = "type_replicate"
-    myname_key
-        key of group
-    mytype_key
-        key of type
-    myreplicate_key
-        key of replicate
-    target_coordinates
-        target_coordinates system
-    Returns
-    -------
-    sdata polygon object.
-    """
-    sdata[shape_key][["type", "replicate"]] = sdata[shape_key]["name"].str.split("_", expand=True)
-
-    sdata.table.obs[myname_key] = "#NA"
-    sdata.table.obs[mytype_key] = "#NA"
-    # sdata.table.obs[myreplicate_key] = "#NA"
-
-    region_key = sdata.table.uns["spatialdata_attrs"]["region"]
-    my_shapes = {region_key: sdata[region_key], shape_key: sdata[shape_key]}
-    my_tables = {"table": sdata["table"]}
-    sdata2 = SpatialData(shapes=my_shapes, tables=my_tables)
-
-    for i in range(0, len(sdata2[shape_key])):
-        print(sdata2[shape_key].name[i])
-
-        poly = sdata2[shape_key].geometry[i]
-        myname = sdata2[shape_key]["name"][i]
-        mytype = sdata2[shape_key]["type"][i]
-        # myreplicate = sdata[shape_key]["replicate"][i]
-
-        sdata3 = sd.polygon_query(
-            sdata2,
-            poly,
-            target_coordinate_system=target_coordinates,
-            filter_table=True,
-        )
-        sdata2.table.obs.loc[sdata3.table.obs.index.to_list(), myname_key] = myname
-        sdata2.table.obs.loc[sdata3.table.obs.index.to_list(), mytype_key] = mytype
-        # sdata.table.obs.loc[sdata2.table.obs.index.to_list(), myreplicate_key] = myreplicate
-
-    return sdata2
 
  
 def pseudobulk(
@@ -300,8 +246,7 @@ def pseudobulk(
     shrink_LFC: bool = False,
     join_by: str = '..',
     quiet: bool = True,
-
-):
+) -> pd.DataFrame:
     """Decoupler pydeseq2 pseudobulk handler.
 
     Parameters
@@ -384,7 +329,7 @@ def pseudobulk(
         [groups_key, condition]
         ].astype(str).agg(join_by.join, axis=1).values
 
-    adata.uns["sparty"]["matrice"] = pd.DataFrame(pdata.X.T, index=pdata.var_names, columns=pdata.obs_names) 
+    adata.uns["sparty"]["matrix"] = pd.DataFrame(pdata.X.T, index=pdata.var_names, columns=pdata.obs_names) 
     # dc.plot_psbulk_samples(pdata, groupby=[replicate, groups_key], figsize=figsize)
   
     if not design:
@@ -472,147 +417,8 @@ def pseudobulk(
                     df_total = pd.concat([df_total, results_df.reset_index(names="gene")])
           
     adata.uns["sparty"][key_added] = df_total.reset_index(drop=True)
-    return
-
-
-# def pseudobulk(
-#     adata: an.AnnData,
-#     replicate: str,
-#     condition: str, # obv. need to be unique per replicate
-#     conds: tuple = [],
-#     groups_key: str = "scmusk",
-#     groups: tuple = [],
-#     key_added: str = 'results',
-#     layer: str = "counts",
-#     min_cells: int = 5,
-#     top_volcano: int = 20,
-#     min_counts: int = 200,
-#     sign_thr: float = 0.05,
-#     lFCs_thr: int = 0.5,
-#     save: bool = False,
-#     save_prefix: str = "decoupler",
-#     figsize: tuple = (8,3),
-# ) -> pd.DataFrame:
-#     """Decoupler pydeseq2 pseudobulk handler.
-
-#     Parameters
-#     ----------
-#     adata
-#         AnnData object.
-#     replicate
-#         replicate key
-#     condition
-#         condition key
-#     conds
-#         list of the 2 conditions to compare
-#     groups_key
-#         sdata.table.obs key, i.e. cell types
-#     groups
-#         specify the cell types to work with
-#     key_added
-#         The key added to `adata.uns['sparty']` result is saved to.
-#     layer
-#         sdata.table count values layer
-#     min_cells
-#         minimum cell number to keep replicate
-#     min_counts
-#         minimum total count to keep replicate
-#     sign_thr
-#         significant value threshold
-#     lFCs_thr
-#         log-foldchange value threshold
-#     save
-#         wether or not to save plots and tables
-#     save_prefix
-#         prefix for saved plot and tables
-#     figsize
-#         figure size
-
-#     Returns
-#     -------
-#     Return a global pd.DataFrame containing the pseudobulk analysis for plotting.
-#     """
-#     # https://decoupler-py.readthedocs.io/en/latest/notebooks/pseudobulk.html
-#     # sns.set(font_scale=0.5)
-    
-#     conds.sort()
-#     adconds = adata[adata.obs[condition].isin(conds)].copy()
-
-#     pdata = dc.get_pseudobulk(
-#         adconds,
-#         sample_col=replicate,  # "pseudoname"
-#         groups_col=groups_key,  # celltype
-#         layer=layer,
-#         mode="sum",
-#         min_cells=min_cells,
-#         min_counts=min_counts,
-#     )
-#     # dc.plot_psbulk_samples(pdata, groupby=[replicate, groups_key], figsize=figsize)
-
-#     if groups is None:
-#         groups = adconds.obs[groups_key].cat.categories.tolist()
-
-#     df_total = pd.DataFrame()
-#     for ct in groups:
-#         print(ct)
-        
-#         sub = pdata[pdata.obs[groups_key] == ct].copy()
-
-#         if len(sub.obs[condition].to_list()) > 1:
-#             # Obtain genes that pass the thresholds
-#             genes = dc.filter_by_expr(sub, group=condition, min_count=5, min_total_count=5)
-#             # Filter by these genes
-#             sub = sub[:, genes].copy()
-
-#             if len(sub.obs[condition].unique().tolist()) > 1:
-#                 # Build DESeq2 object
-#                 dds = DeseqDataSet(
-#                     adata=sub,
-#                     design_factors=condition,
-#                     ref_level=[condition, conds[1]],
-#                     refit_cooks=True,
-#                     quiet=True,
-#                 )
-
-#                 if len(sub.obs[replicate].unique().tolist()) > 2:
-#                     dds.deseq2()
-#                     stat_res = DeseqStats(dds, contrast=[condition, conds[1], conds[0]], quiet=True)
-#                     stat_res.summary()
-#                     # might be cond_2
-#                     stat_res.lfc_shrink(coeff=condition+"[T."+conds[1]+"]")
-#                     results_df = stat_res.results_df
-
-#                     # sign_thr=0.05, lFCs_thr=0.5
-#                     results_df["pvals"] = -np.log10(results_df["padj"])
-#                     up_msk = (results_df["log2FoldChange"] >= lFCs_thr) & (results_df["pvals"] >= -np.log10(sign_thr))
-#                     dw_msk = (results_df["log2FoldChange"] <= -lFCs_thr) & (results_df["pvals"] >= -np.log10(sign_thr))
-#                     signs = results_df[up_msk | dw_msk].sort_values("pvals", ascending=False)
-#                     signs = signs.iloc[:top_volcano]
-#                     signs = signs.sort_values("log2FoldChange", ascending=False)
-
-#                     if len(signs.index.tolist()) > 0:
-#                         fig, axs = plt.subplots(1, 2, figsize=figsize)
-#                         dc.plot_volcano_df(results_df, x="log2FoldChange", y="padj", ax=axs[0], top=top_volcano)
-#                         axs[0].set_title(ct + "("+conds[1]+"-"+conds[0]+")")
-#                         sc.pp.normalize_total(sub)
-#                         sc.pp.log1p(sub)
-#                         sc.pp.scale(sub, max_value=10)
-#                         sc.pl.matrixplot(sub, signs.index, groupby=replicate, ax=axs[1])
-#                         plt.tight_layout()
-
-#                         # concatenate to total
-#                         signs[groups_key] = ct
-#                         results_df[groups_key] = ct
-#                         df_total = pd.concat([df_total, results_df.reset_index()])
-
-#                         if save is True:
-#                             results_df.to_csv(save_prefix + "_" + ct + ".csv")
-#                             fig.savefig(save_prefix + "_" + ct + ".pdf", bbox_inches="tight")
-    
-#     adata.uns["sparty"] = {}
-#     adata.uns["sparty"][key_added] = df_total.reset_index(drop=True)
-#     print("results stored in adata.uns['sparty']['",key_added,"']")
-#     print("--> scis.pl.plot_pseudobulk(adata, key='",key_added,"')")
+    # return 
+    return adata.uns["sparty"][key_added]
 
 
 def sdata_rotate(
@@ -799,7 +605,7 @@ def fromAxisMedialToDf(
     """Compute 'nb_interval' regular intervals along the centerline
 
     Parameters
-    ----------        
+    ---------- 
     sdata (sd.SpatialData): _description_
     axisMedial (shapely.LineString): _description_
     nb_interval (int, optional): _description_. Defaults to 10.
@@ -807,7 +613,8 @@ def fromAxisMedialToDf(
     group_by (str, optional): _description_. Defaults to "cell_type_pred".
     scale_factor (float, optional): _description_. Defaults to 1/0.2125.
 
-    Returns:
+    Returns
+    -------
         _type_: _description_
     """
     if isinstance(data,sd.SpatialData):
@@ -872,18 +679,20 @@ def df_for_genes(
 ):
     """Calculate the number of transcripts for a list of genes in 'nb_interval' regulars intervals
 
-    Args:
-        sdata (sd.SpatialData): _description_
-        axisMedial (shapely.LineString): _description_
-        genes (str | list): _description_
-        nb_interval (int, optional): _description_. Defaults to 10.
-        transcript_key (str, optional): _description_. Defaults to 'transcripts'.
-        feature_key (str, optional): _description_. Defaults to 'feature_name'.
-        qv (int, optional): _description_. Defaults to 20.
-        group_by (str, optional): _description_. Defaults to "cell_type".
+    Parameters
+    ----------
+    sdata (sd.SpatialData): _description_
+    axisMedial (shapely.LineString): _description_
+    genes (str | list): _description_
+    nb_interval (int, optional): _description_. Defaults to 10.
+    transcript_key (str, optional): _description_. Defaults to 'transcripts'.
+    feature_key (str, optional): _description_. Defaults to 'feature_name'.
+    qv (int, optional): _description_. Defaults to 20.
+    group_by (str, optional): _description_. Defaults to "cell_type".
 
-    Returns:
-        df_trans_sub: _description_
+    Returns
+    -------
+    df_trans_sub: _description_
     """
     labels = [str(i) for i in range(nb_interval)]
 
@@ -943,7 +752,8 @@ def orthogonalDistance(
 ) -> gpd.GeoDataFrame:  
     """Normalize the distance by following the othogonal axis
 
-    Args:
+    Parameters
+    ----------
         data (pd.DataFrame | gpd.GeoDataFrame): _description_
         polygon (shapely.Polygon): _description_
         centerline (shapely.LineString): _description_
@@ -951,12 +761,13 @@ def orthogonalDistance(
         distance (int, optional): _description_. Defaults to 30.
         round (int, optional): _description_. Defaults to 3.
 
-    Returns:
+    Returns
+    -------
         gpd.GeoDataFrame: _description_
     """
-    if isinstance(data,sd.SpatialData):
+    if isinstance(data, sd.SpatialData):
         df_compute = data[shape_key].copy()
-    elif isinstance(data,pd.DataFrame):
+    elif isinstance(data, pd.DataFrame):
         df_compute = data.copy()
 
     if not isinstance(df_compute, gpd.GeoDataFrame):
@@ -996,9 +807,9 @@ def orthogonalDistance(
     df_compute['distance'] -= df_compute['distance'].min()
     df_compute['dst_orth_norm'] = (df_compute['distance'] / df_compute['distance'].max()).round(round)
     
-    if isinstance(data,sd.SpatialData):
+    if isinstance(data, sd.SpatialData):
         data[shape_key][['cat_orth', 'dst_orth_norm']] = df_compute[['cat_orth', 'dst_orth_norm']]
-    elif isinstance(data,pd.DataFrame):
+    elif isinstance(data, pd.DataFrame):
         data[['cat_orth', 'dst_orth_norm']] = df_compute[['cat_orth', 'dst_orth_norm']]
 
     if return_df:
@@ -1008,77 +819,60 @@ def orthogonalDistance(
 
 
 
-
-# def find_polygon(geometry, up, down):
-#     if up.intersects(geometry.centroid):
-#         return 1
-#     elif down.intersects(geometry.centroid):
-#         return 2
-#     elif up.intersects(geometry):
-#         return 1
-#     elif down.intersects(geometry):
-#         return 2
-#     else:
-#         return 0
-
-
-# def orthogonalDistance(
-#     data: pd.DataFrame | gpd.GeoDataFrame,
-#     polygon: shapely.Polygon, 
-#     centerline: shapely.LineString,
-#     # shape_key: str = 'cell_boundaries',
-#     group_by: str | None = None,
-#     distance: int = 30,
-#     round: int = 3,
-# ) -> gpd.GeoDataFrame:  
-   
-
-#     gdf_polygons = gpd.GeoDataFrame({'cat_layers': [1, 2]}, geometry=[up_shape, down_shape])
-#     df_compute = gpd.sjoin(df_compute, gdf_polygons, predicate="intersects", how="left")
-#     # type(df_trans_sub) # geopandas.geodataframe.GeoDataFrame
-
-#     df_compute.loc[df_compute['cat_layers'] == 1, 'distance_pts_line'] *= -1
-#     df_compute['distance_pts_line'] -= df_compute['distance_pts_line'].min()
-#     # print(df_compute['distance_pts_line'].min())
-#     df_compute['distance_normalize']  = (df_compute['distance_pts_line'] / df_compute['distance_pts_line'].max()).round(round)
-    
-#     return df_compute
-
-
-
-    
-# def orthogonalDistance(
+# def prep_pseudobulk(
 #     sdata: sd.SpatialData,
-#     polygon: shapely.Polygon, 
-#     centerline: shapely.LineString,
-#     shape_key: str = 'cell_boundaries',
-#     distance: int = 30,
-#     round: int = 3,
-# ):
-#     if len(shapely.ops.split(polygon, centerline).geoms) == 1 :
-#         order_centers= shapely.get_coordinates(centerline)
-#         extendedLine_start = scis.tl.unfolding.extendLine(order_centers[0, :], 
-#                                         order_centers[1, :], distance=distance)
-#         extendedLine_end = scis.tl.unfolding.extendLine(order_centers[-1, :], 
-#                                         order_centers[-2, :], distance=distance)
-#         lineFinal = shapely.LineString(np.vstack([shapely.get_coordinates(extendedLine_start)[0], 
-#                                                 order_centers,
-#                                                 shapely.get_coordinates(extendedLine_end)[0]]))
-#         split_shapes = shapely.ops.split(polygon, lineFinal)
-        
-#         if len(split_shapes.geoms) == 2:
-#             up_shape = split_shapes.geoms[0]
-#             down_shape = split_shapes.geoms[1]
-#         else:
-#             print(len(split_shapes.geoms))
-#             print("Increase distance")
-#             return
-    
-#     sdata[shape_key]["distance_pts_line"] = sdata[shape_key]["geometry"].apply(
-#         lambda row: shapely.distance(row.centroid, centerline))
-#     sdata[shape_key]['cat_layers']  = sdata[shape_key]["geometry"].apply(
-#         lambda row: find_polygon(row, up_shape,down_shape))    
-#     sdata[shape_key].loc[sdata[shape_key]['cat_layers'] == 1, 'distance_pts_line'] *= -1
-#     sdata[shape_key]['distance_pts_line'] -= sdata[shape_key]['distance_pts_line'].min()
-#     sdata[shape_key]['distance_normalize']  = (sdata[shape_key]['distance_pts_line'] / sdata[shape_key]['distance_pts_line'].max()).round(round)
-#     # print(sdata[shape_key])
+#     shape_key: str = "myshapes",
+#     myname_key: str = "pseudoname",
+#     mytype_key: str = "pseudotype",
+#     target_coordinates: str = "microns",
+# ) -> sd.SpatialData:
+#     """Prepare sdata.table.obs for tl.run_pseudobulk()
+
+#     Parameters
+#     ----------
+#     sdata
+#         SpatialData object.
+#     shape_key
+#         sdata shape element key where to find the polygon defining the zones with "name" = "type_replicate"
+#     myname_key
+#         key of group
+#     mytype_key
+#         key of type
+#     myreplicate_key
+#         key of replicate
+#     target_coordinates
+#         target_coordinates system
+#     Returns
+#     -------
+#     sdata polygon object.
+#     """
+#     sdata[shape_key][["type", "replicate"]] = sdata[shape_key]["name"].str.split("_", expand=True)
+
+#     sdata.table.obs[myname_key] = "#NA"
+#     sdata.table.obs[mytype_key] = "#NA"
+#     # sdata.table.obs[myreplicate_key] = "#NA"
+
+#     region_key = sdata.table.uns["spatialdata_attrs"]["region"]
+#     my_shapes = {region_key: sdata[region_key], shape_key: sdata[shape_key]}
+#     my_tables = {"table": sdata["table"]}
+#     sdata2 = SpatialData(shapes=my_shapes, tables=my_tables)
+
+#     for i in range(0, len(sdata2[shape_key])):
+#         print(sdata2[shape_key].name[i])
+
+#         poly = sdata2[shape_key].geometry[i]
+#         myname = sdata2[shape_key]["name"][i]
+#         mytype = sdata2[shape_key]["type"][i]
+#         # myreplicate = sdata[shape_key]["replicate"][i]
+
+#         sdata3 = sd.polygon_query(
+#             sdata2,
+#             poly,
+#             target_coordinate_system=target_coordinates,
+#             filter_table=True,
+#         )
+#         sdata2.table.obs.loc[sdata3.table.obs.index.to_list(), myname_key] = myname
+#         sdata2.table.obs.loc[sdata3.table.obs.index.to_list(), mytype_key] = mytype
+#         # sdata.table.obs.loc[sdata2.table.obs.index.to_list(), myreplicate_key] = myreplicate
+
+#     return sdata2

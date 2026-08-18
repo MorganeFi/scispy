@@ -1,6 +1,7 @@
 import pandas as pd
 import spatialdata as sd
 import spatialdata_io
+import math 
 
 def load_merscope(
     path: str,
@@ -9,6 +10,9 @@ def load_merscope(
     region_name: str = "region_0",
     z_layers: int = 2,
     feature_key: str = "gene",
+    # instance_key: str = 'cell_id',
+    table_key: str = 'table',
+    # spatial_key: str = 'spatial',
     layer: str ='counts',
 ) -> sd.SpatialData:
     """Load vizgen merscope data as SpatialData object
@@ -37,9 +41,12 @@ def load_merscope(
         slide_name=slide_name, z_layers=z_layers
     )
 
-    sdata['table'].obs_names.name = None
-    sdata['table'].layers[layer] = sdata['table'].X.copy()
-    sdata['table'].uns["spatialdata_attrs"]["feature_key"] = feature_key
+    sdata[table_key].obs_names.name = None
+    sdata[table_key].layers[layer] = sdata[table_key].X.copy()
+    # sdata[table_key].obs[["center_x", "center_y"]] = sdata[table_key].obsm[spatial_key]
+
+    sdata[table_key].uns["spatialdata_attrs"]["feature_key"] = feature_key
+    sdata[table_key].uns["technology"] = "merscope"
 
     # sdata['table'].uns["spatialdata_attrs"]["region"] = region
     # sdata['table'].obs["region"] = region
@@ -86,7 +93,8 @@ def load_xenium(
     index_table: bool = True,
     n_jobs: int = 1,
 ) -> sd.SpatialData:
-    """Load xenium data as SpatialData object
+    """
+    Load xenium data as SpatialData object
 
     Parameters
     ----------
@@ -100,6 +108,7 @@ def load_xenium(
         default column for feature name in transcripts.
     n_jobs
         number of jobs to load the xenium object
+
     Returns
     -------
     SpatialData object
@@ -114,6 +123,7 @@ def load_xenium(
         'instance_key': instance_key,
         'feature_key': feature_key 
     }
+    sdata[table_key].uns["technology"] = "xenium"
 
     sdata[table_key].obs['region'] = region
     sdata[table_key].obs['region'] = sdata[table_key].obs['region'].astype('category')
@@ -128,8 +138,11 @@ def load_cosmx(
     path: str,
     dataset_id: str = "R5941_ColonTMA",
     feature_key: str = "target",
+    table_key: str = 'table',
+    spatial_key: str = 'spatial',
 ) -> sd.SpatialData:
-    """Load cosmx data as SpatialData object
+    """
+    Load cosmx data as SpatialData object
 
     Parameters
     ----------
@@ -145,9 +158,11 @@ def load_cosmx(
     SpatialData object
     """
     sdata = spatialdata_io.cosmx(path, dataset_id=dataset_id, transcripts=True)
-    sdata['table'].layers["counts"] = sdata['table'].X.copy()
-    sdata['table'].obs[["center_x", "center_y"]] = sdata['table'].obsm["spatial"]
-    sdata['table'].uns["spatialdata_attrs"]["feature_key"] = feature_key
+    sdata[table_key].layers["counts"] = sdata[table_key].X.copy()
+    sdata[table_key].obs[["center_x", "center_y"]] = sdata[table_key].obsm[spatial_key]
+
+    sdata[table_key].uns["spatialdata_attrs"]["feature_key"] = feature_key
+    sdata[table_key].uns["technology"] = "cosmx"
     # sdata.table.uns["spatialdata_attrs"]["region"] = region
 
     return sdata
@@ -169,6 +184,17 @@ def subsetSample(
     scale_factor: float = 0.2125,
     region: str = 'cell_boundaries',
 ) -> sd.SpatialData:
+    """
+    Separe samples based on fov locations
+
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     manip['Region name'] = sample
     width = fov_locations.iloc[0]['width']
     height = fov_locations.iloc[0]['height']

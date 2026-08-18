@@ -14,8 +14,9 @@ def metrics_summary(
     table_key: str = 'table',
     transcripts_key: str = 'transcripts',
     image_key: str = 'morphology_focus',
-) -> 'dict':
-    """    Generate a summary of metrics for a SpatialData object that come from the Xenium technology.
+) -> dict:
+    """    
+    Generate a summary of metrics for a SpatialData object that come from the Xenium technology.
 
     Parameters
     ----------
@@ -23,6 +24,7 @@ def metrics_summary(
         SpatialData object.
     scale_factor
         Scale factor to convert pixel dimensions to microns.
+
     Returns
     -------
     dict
@@ -103,7 +105,8 @@ def subsetSamples(
     region: str = 'cell_boundaries',
     techno: str = 'Xenium',
 ) -> sd.SpatialData:
-    """    Subset SpatialData object based on specified regions and sample.
+    """    
+    Subset SpatialData object based on specified regions and sample.
 
     Parameters
     ----------
@@ -164,7 +167,8 @@ def prepro_qc_scanpy(
     table_key: str = "table",
     positive_coord_only: bool = False,
 ):
-    """Preprocess and QC-filter SpatialData table before Scanpy analysis.
+    """
+    Preprocess and QC-filter SpatialData table before Scanpy analysis.
 
     Parameters
     ----------
@@ -228,7 +232,8 @@ def run_scanpy(
     table_key: str = "table",
     scale: bool = False,
 ):
-    """Run Scanpy normalization, dimensionality reduction, clustering, and plotting.
+    """
+    Run Scanpy normalization, dimensionality reduction, clustering, and plotting.
 
     Parameters
     ----------
@@ -466,9 +471,9 @@ def sync_shape(
     shape_key: str = None,
     table_key: str = 'table',
     region_key: str = 'region',
-
-):
-    """Synchronize shapes with table
+) -> None:
+    """
+    Synchronize shapes with table
 
     Parameters
     ----------

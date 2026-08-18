@@ -35,7 +35,16 @@ def apply_affine_gpd(shape, transfo):
 
 
 def compute_bounds_dask(transcripts, transfo, scale=False):
-    """Apply a transformation to a Dask DataFrame"""
+    """Apply a transformation to a Dask DataFrame
+    
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
+    """
     if not (isinstance(transfo, Identity) or isinstance(transfo, Scale) and not scale):
         if isinstance(transfo, Sequence):
             if scale:
@@ -60,6 +69,14 @@ def compute_bounds_dask(transcripts, transfo, scale=False):
 def compute_bounds_gpd(shape, transfo, scale=False):
     """
     Computes the bounds (xmin, ymin, xmax, ymax) based on the applied transformation.
+    
+    Parameters
+    ----------
+        to be completed
+
+    Returns
+    -------
+        to be completed
     """
     if (isinstance(transfo, Identity)) or (isinstance(transfo, Scale) and not scale):
         return shape.total_bounds
