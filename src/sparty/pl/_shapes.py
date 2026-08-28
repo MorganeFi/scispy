@@ -1,351 +1,238 @@
 import matplotlib.pyplot as plt
-from shapely import Polygon
-from shapely.plotting import plot_polygon
+from shapely import Polygon, LineString
+# from shapely.plotting import plot_polygon
 import math
 import numpy as np
 # from squidpy._docs import d
+import pandas as pd
+import matplotlib.patches as mpatches
 
-
-def plot_cells_dict(
-    cells: dict,
-    nucls: dict,
-    positions: dict | None = None,
-    gene_name: str | None = None,
+def spatial_distance(
+    dfs: dict,
+    column: str,
     ncols: int = 4,
-    marker='o',
-    figsize_per_subplot=(5, 5),
+    figsize_per_plot: tuple = (5, 5),
+    markersize: float = 1.0,
+    cmap: str = "viridis",
+    shared_scale: bool = True,
+    show_axis: bool = False,
+    show_colorbar: bool = True,
+    show: bool = True,
+    return_y_axis: bool = True,
+    return_fig: bool = False,
+    save: str | None = None,
+    dpi: int = 300,
+    alpha: float = 0.8,
+    **plot_kwargs,
 ):
     """
-    Plots cells, nuclei, and optional positions from dictionaries.
+    Plot a given column of (Geo)DataFrames stored in a dictionary, using the
+    centroid of each geometry as a scatter point (works for both Point and
+    Polygon geometries). Supports both numeric and categorical columns.
 
     Parameters
     ----------
-    cells : dict
-        {cell_id: Polygon or array-like of (x, y)}
-    nucls : dict
-        {cell_id: Polygon or array-like of (x, y)}
-    positions : dict, optional
-        {cell_id: list of (x, y)}
+    dfs : dict
+        Dictionary {sample_name: GeoDataFrame}. Each GeoDataFrame must
+        contain the column given by `column` and a `geometry` column.
+    column : str
+        Name of the column to visualize. Can be numeric (continuous colormap)
+        or categorical/object/bool (discrete colors + legend).
     ncols : int
-        Number of columns in subplot grid
-    figsize_per_subplot : tuple
-        Size of each subplot
-
-    Plot top `n_top` expressed genes.
-
-    Returns
-    -------
-        to be completed
-    """
-
-    # cellules communes (sécurité)
-    cell_ids = sorted(set(cells.keys()) & set(nucls.keys()))
-    n = len(cell_ids)
-
-    if n == 0:
-        raise ValueError("No common cell_id between cells and nucls")
-
-    nrows = math.ceil(n / ncols)
-    figsize = (figsize_per_subplot[0] * ncols,
-               figsize_per_subplot[1] * nrows)
-
-    fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
-    axes = axes.flatten() if n > 1 else [axes]
-
-    for i, cell_id in enumerate(cell_ids):
-        ax = axes[i]
-
-        cell = cells[cell_id]
-        nucl = nucls[cell_id]
-
-        cell_poly = Polygon(cell) if not isinstance(cell, Polygon) else cell
-        nucl_poly = Polygon(nucl) if not isinstance(nucl, Polygon) else nucl
-
-        _, points1 = plot_polygon( # patch1, points1
-            cell_poly,
-            ax=ax,
-            linewidth=2,
-            edgecolor='#75747A',
-            color='#75747A',
-            facecolor='#FED9AF',
-            add_points=True
-        )
-
-        _, points2 = plot_polygon( # patch2, points2
-            nucl_poly,
-            ax=ax,
-            linewidth=1,
-            edgecolor='#5D3E1E',
-            color='#5D3E1E',
-            facecolor='#D1EAC3',
-            add_points=True
-        )
-
-        points1.set_markersize(5)
-        points2.set_markersize(3)
-
-        if positions is not None and cell_id in positions:
-            pos = np.asarray(positions[cell_id])
-            ax.scatter(pos[:, 0], pos[:, 1],
-                s=20,
-                c="#EF3E36", #"#EF3E36","#1904FF" #'#336699' ,
-                zorder=5,
-                marker=marker,
-                label="positions"
-            )
-        ax.set_title(cell_id, fontsize=12)
-        ax.set_aspect("equal")
-        ax.set_axis_off()
-
-    # Remove unused axes
-    for j in range(n, nrows * ncols):
-        axes[j].set_visible(False)
-
-    if gene_name is not None:
-        fig.suptitle(
-            gene_name,
-            fontsize=18,
-            fontweight="bold",
-            y=1.02
-        )
-    plt.tight_layout(rect=[0, 0, 1, 1])
-    # plt.tight_layout()
-    # fig.set_constrained_layout(True)
-
-    plt.show()
-
-
-def sub_positions_of_gene(
-    df,
-    gene,
-    feature_key = 'feature_name',
-    cell_id = 'cell_id',
-    coordinates = ('x', 'y'),
-) -> dict:
-    x = coordinates[0]
-    y = coordinates[1]
-
-    sub_gene = df[df[feature_key] == gene]
-    cell_dict = {
-        cell: list(zip(group[x], group[y]))
-        for cell, group in sub_gene.groupby(cell_id)
-    }
-    return cell_dict
-
-
-def plot_gene_in_cells(
-    sdata,
-    gene: str,
-    group: str,
-    list_of_cells: list = None,
-    groupby: str = 'cell_type',
-    cell_id: str = 'cell_id',
-    shape_cells_key: str = 'cell_boundaries',
-    shape_nucleus_key: str = 'nucleus_boundaries',
-    feature_key: str = 'feature_name',
-    transcript_key: str = 'transcripts',
-    table_key: str = 'table',  
-    qv: int = 20,
-    max_cells_to_plot: int = 50,
-    ncols: int = 4,
-    marker:str = 'o',
-    figsize_per_subplot:tuple = (5, 5),
-    # GENE_EXCLUDE_PATTERN = "Unassigned.*|Deprecated.*|Intergenic.*|Neg.*",
-):
-    """
-    Visualize transcripts in cells for a subset of `max_cells_to_plot` for a specific group.
-
-    Parameters
-    ----------
-        to be completed
+        Number of columns for the subplot grid (ignored if there is only one sample).
+    figsize_per_plot : tuple
+        Size (width, height) allocated per subplot.
+    markersize : float
+        Marker size (passed as `s` to ax.scatter).
+    cmap : str
+        Colormap name.
+    shared_scale : bool
+        If True, uses a common vmin/vmax (numeric) or a common category->color
+        mapping (categorical) across all samples, and a single shared
+        colorbar/legend is shown instead of one per subplot.
+    show_axis : bool
+        If False, hides the axes (ticks, labels, frame).
+    show_colorbar : bool
+        If True, adds a colorbar/legend (shared if `shared_scale`, else per subplot).
+    show : bool
+        If True, displays the figure with plt.show().
+    return_fig : bool
+        If True, returns the matplotlib Figure object.
+    save : str, optional
+        File path to save the figure (e.g. "out.png"). None = no saving.
+    dpi : int
+        Resolution for saving (ignored if save=None).
+    alpha : float
+        Point transparency, useful for dense scatter clouds.
+    **plot_kwargs
+        Extra keyword arguments forwarded to ax.scatter (e.g. edgecolors, linewidths).
 
     Returns
     -------
-        to be completed
+    fig or None
+        The matplotlib figure if return_fig=True, otherwise None.
     """
-    if list_of_cells is None:
-        list_of_cells = sdata[table_key].obs.loc[sdata[table_key].obs[groupby] == group, cell_id].tolist()
-
-    if len(list_of_cells) > max_cells_to_plot:
-        print(f"The group contains {len(list_of_cells)} cells and max_cells_to_plot has been set to {max_cells_to_plot}. We will randomly select cells to plot.")
-        list_of_cells = np.random.choice(list_of_cells, size=max_cells_to_plot, replace=False)
+    n_samples = len(dfs)
     
-    df_transcripts = sdata[transcript_key][
-        (sdata[transcript_key]['qv'] >= qv) &
-        (sdata[transcript_key][cell_id].isin(list_of_cells)) &
-        (sdata[transcript_key][feature_key] == gene)
-        ].dropna(subset=feature_key).compute()
-    # df_transcripts = df_transcripts[
-    #         ~df_transcripts[feature_key].str.contains(GENE_EXCLUDE_PATTERN, regex=True)
-    #     ]
-    df_transcripts[feature_key] = df_transcripts[feature_key].cat.remove_unused_categories()
-    print(len(df_transcripts[feature_key].unique()))
-
-    cell_dict = sub_positions_of_gene(
-        df=df_transcripts,
-        gene=gene)
-
-    sub_shape_cells = sdata[shape_cells_key].loc[list_of_cells]['geometry'].to_dict()
-    sub_shape_nucleus = sdata[shape_nucleus_key].loc[list_of_cells]['geometry'].to_dict()
-    # {cell_id: polygon} 
-
-    plot_cells_dict(
-        cells=sub_shape_cells,     
-        nucls=sub_shape_nucleus,   
-        positions=cell_dict,
-        gene_name=gene,
-        ncols=ncols,
-        marker=marker,
-        figsize_per_subplot=figsize_per_subplot
+    # detect categorical / non-numeric columns
+    sample_col = next(iter(dfs.values()))[column]
+    is_categorical = (
+        isinstance(sample_col.dtype, pd.CategoricalDtype)
+        or sample_col.dtype == object
+        or sample_col.dtype == bool
     )
 
+    vmin = vmax = None
+    categories = None
+    color_map = None
 
-# def plot_shapes(
-#     sdata: sd.SpatialData,
-#     group_lst: tuple = None,  # the cell types to consider
-#     shapes_lst: tuple = None,  # the shapes to plot
-#     color_key: str = "celltype_spatial",
-#     shape_key: str = "arteries",
-#     target_coordinates: str = "microns",
-#     figsize: tuple = (12, 6),
-#     palette: tuple = None,
-#     save: bool = False,
-# ):
-#     """Plot list of shapes
+    if is_categorical:
+        if shared_scale:
+            if isinstance(sample_col.dtype, pd.CategoricalDtype) and sample_col.cat.ordered:
+                categories = list(sample_col.cat.categories)
+            else:
+                cats = set()
+                for df in dfs.values():
+                    cats.update(df[column].dropna().unique().tolist())
+                categories = sorted(cats, key=str)
+        cmap_obj = plt.get_cmap(cmap, max(len(categories), 1) if categories else None)
+    else:
+        if shared_scale:
+            vmin = min(df[column].min() for df in dfs.values())
+            vmax = max(df[column].max() for df in dfs.values())
 
-#     Parameters
-#     ----------
-#     sdata
-#         SpatialData object obtained by tl.get_sdata_polygon()
-#     group_lst
-#         group list to consider (related to label_obs_key)
-#     shapes_lst
-#         shapes list to plot
-#     color_key
-#         label_key in sdata['table'].obs to consider
-#     shape_key
-#         SpatialData shape element to consider
-#     palette
-#         dictionary of colors to use
-#     target_coordinates
-#         target_coordinates system of sdata object
-#     figsize
-#         figure size
-#     save
-#         wether or not to save the figure
+    # legend per-subplot only makes sense when scales/categories differ per sample
+    legend_per_ax = show_colorbar and not shared_scale
 
-#     """
-#     region_key = sdata['table'].uns["spatialdata_attrs"]["region"]
-#     my_shapes = {region_key: sdata[region_key], shape_key: sdata[shape_key]}
-#     my_tables = {"table": sdata["table"]}
-#     sdata2 = SpatialData(shapes=my_shapes, tables=my_tables)
+    axes = []
+    legend_handles = None
+    def _scatter(ax, df, name):
+        nonlocal color_map, legend_handles
+        centroids = df.geometry.centroid
+        vals = df[column]
 
-#     fig, axs = plt.subplots(ncols=len(shapes_lst), nrows=1, figsize=figsize)
-#     for i in range(0, len(shapes_lst)):
-#         poly = sdata2[shape_key][sdata2[shape_key].name == shapes_lst[i]].geometry.item()
-#         sdata3 = sd.polygon_query(
-#             sdata2,
-#             poly,
-#             target_coordinate_system=target_coordinates,
-#             filter_table=True,
-#         )
+        if is_categorical:
+            local_categories = categories if categories is not None else sorted(
+                vals.dropna().unique().tolist(), key=str
+            )
+            local_cmap = plt.get_cmap(cmap, max(len(local_categories), 1))
+            local_color_map = {cat: local_cmap(i) for i, cat in enumerate(local_categories)}
+            default_color = (0.8, 0.8, 0.8, 1.0)  # NaN -> light grey
 
-#         # sdata3.pl.render_images().pl.show(ax=axs[i])
-#         if group_lst is None:
-#             group_lst = sdata2['table'].obs[color_key].unique().tolist()
+            # avoid Categorical.map (breaks on tuple-valued mappers); map on plain
+            # object values instead
+            colors = np.array([
+                local_color_map.get(v, default_color) if pd.notna(v) else default_color
+                for v in vals.astype(object)
+            ])
 
-#         if palette is not None:
-#             mypal = [palette[x] for x in group_lst]
-#             sdata3.pl.render_shapes(elements=region_key, color=color_key, groups=group_lst, palette=mypal).pl.show(
-#                 ax=axs[i]
-#             )
-#         else:
-#             sdata3.pl.render_shapes(elements=region_key, color=color_key, groups=group_lst).pl.show(ax=axs[i])
+            sc = ax.scatter(
+                centroids.x, centroids.y,
+                c=colors, s=markersize, alpha=alpha, linewidths=0,
+                **plot_kwargs,
+            )
+            if shared_scale:
+                color_map = local_color_map
+            if legend_per_ax:
+                handles = [
+                    mpatches.Patch(color=local_color_map[cat], label=str(cat))
+                    for cat in local_categories
+                ]
+                ax.legend(handles=handles, fontsize=7, loc="best", frameon=False)
+            else:
+                legend_handles = [
+                    mpatches.Patch(color=local_color_map[cat], label=str(cat))
+                    for cat in local_categories
+                ]
+        else:
+            sc = ax.scatter(
+                centroids.x, centroids.y,
+                c=vals, cmap=cmap, vmin=vmin, vmax=vmax,
+                s=markersize, alpha=alpha, linewidths=0,
+                **plot_kwargs,
+            )
+            if legend_per_ax:
+                plt.colorbar(sc, ax=ax, shrink=0.6, label=column)
 
-#         axs[i].set_title(shapes_lst[i])
-#         if i < len(shapes_lst) - 1:
-#             axs[i].get_legend().remove()
+        ax.set_title(name, fontsize=9)
+        ax.set_aspect("equal")
 
-#     plt.tight_layout()
+        if return_y_axis:
+            ax.invert_yaxis()
+
+        if not show_axis:
+            ax.set_xticks([])
+            ax.set_yticks([])
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+        return sc
 
 
+    if n_samples == 1:
+        name, df = next(iter(dfs.items()))
+        fig, ax = plt.subplots(figsize=figsize_per_plot)
+        _scatter(ax, df, name)
+        axes.append(ax)
 
-def plot_cells_list(
-    cells, 
-    nucls, 
-    ncols = 4,
-    figsize_per_subplot=(5, 5),
-    # figsize=(15, 5),
+    else:
+        nrows = n_samples // ncols + (n_samples % ncols > 0)
+
+        fig = plt.figure(figsize=(figsize_per_plot[0] * ncols, figsize_per_plot[1] * nrows))
+        plt.subplots_adjust(hspace=0.5, wspace=0.35)
+
+        for i, (name, df) in enumerate(dfs.items(), start=1):
+            ax = plt.subplot(nrows, ncols, i)
+            _scatter(ax, df, name)
+            axes.append(ax)
+
+    if shared_scale and show_colorbar:
+        if is_categorical:
+            fig.legend(
+                handles=legend_handles, title=column,
+                loc="center left", bbox_to_anchor=(1.0, 0.5), fontsize=8,
+            )
+        else:
+            sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=vmin, vmax=vmax))
+            sm._A = []
+            fig.colorbar(sm, ax=axes, shrink=0.6, label=column)
+
+    if isinstance(save, str):
+        plt.savefig(save, bbox_inches="tight", dpi=dpi)
+    if show:
+        plt.show()
+    if return_fig:
+        return fig
+    
+
+def _plot_single_shape(
+    ax, polygon, centerline, name, linewidth, show_axis,
+    plot_interiors, color_shape, color_line, origin,
 ):
-    """
-    Plots a list of cells and nuclei in subplots.
-    
-    Parameters
-    ----------
-    - cells: list of arrays/lists/Polygons
-    - nucls: list of arrays/lists/Polygons
-    - ncols: number of columns in the grid
-    - figsize_per_subplot: size of each subplot (tuple)
-    #- figsize: figure size (tuple)
+    """Helper interne : trace une polygon + centerline optionnelle sur un ax donné."""
+    x, y = polygon.exterior.xy
+    ax.plot(x, y, c=color_shape, linewidth=linewidth)
 
-    Returns
-    -------
-        to be completed
-    """
-    n = len(cells)
-    nrows = math.ceil(n / ncols)
-    # nrows = n // ncols + (1 if n % ncols != 0 else 0)
+    if plot_interiors:
+        for interior in polygon.interiors:
+            x, y = interior.xy
+            ax.plot(x, y, c=color_shape, linewidth=linewidth)
 
-    figsize = (figsize_per_subplot[0] * ncols, figsize_per_subplot[1] * nrows)
-    
-    fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
-    axes = axes.flatten() if n > 1 else [axes]
-    
-    for i, (cell, nucl) in enumerate(zip(cells, nucls)):
-        ax = axes[i]
-        
-        # Convert to Polygon if needed
-        if isinstance(cell, (np.ndarray, list, tuple)):
-            cell_poly = Polygon(cell)
-        else:
-            cell_poly = cell
-
-        if isinstance(nucl, (np.ndarray, list, tuple)):
-            nucl_poly = Polygon(nucl)
-        else:
-            nucl_poly = nucl
-        
-        # Plot polygons
-        patch1, points1 = plot_polygon(
-            cell_poly,
-            ax=ax,
-            linewidth=2,
-            edgecolor='#75747A',
-            color='#75747A',
-            facecolor='#FED9AF',
-            add_points=True
+    if centerline is not None:
+        x, y = centerline.xy
+        ax.plot(
+            x, y,
+            "-", c=color_line, linewidth=linewidth,
         )
-        patch2, points2 = plot_polygon(
-            nucl_poly,
-            ax=ax,
-            linewidth=1,
-            edgecolor='#5D3E1E',
-            color='#5D3E1E',
-            facecolor='#D1EAC3',
-            add_points=True
-        )
-        points1.set_markersize(5)
-        points2.set_markersize(3)
 
-        ax.set_axis_off()
-        ax.set_aspect('equal')
+    ax.set_title(name, fontsize=20)
+    ax.set_aspect("equal")
 
-    # Turn off any extra axes if total plots < nrows*ncols
-    for j in range(n, nrows * ncols):
-        axes[j].set_visible(False)
+    if origin == "upper":
+        ax.invert_yaxis()
 
-    plt.tight_layout()
-    plt.show()
+    if not show_axis:
+        ax.axis("off")
+
 
 def outlines( # or shapes
     shapes: dict,
@@ -357,6 +244,7 @@ def outlines( # or shapes
     plot_interiors: bool = False,
     color_shape: str = "black",
     color_line: str = "red",
+    origin: str = "upper",  # "upper" ou "lower"
     show: bool = True,
     return_fig: bool = False,
     save: str | None = None,
@@ -388,6 +276,10 @@ def outlines( # or shapes
         Color of the shape outline (exterior + interiors).
     color_line : str
         Color of the centerline.
+    origin : str
+        "upper" (défaut) place l'origine en haut à gauche (convention image,
+        comme imshow avec origin='upper'). "lower" garde le repère cartésien
+        standard (origine en bas à gauche).
     show : bool
         If True, displays the figure with plt.show().
     return_fig : bool
@@ -405,6 +297,9 @@ def outlines( # or shapes
     if centerlines is None:
         centerlines = {}
 
+    if origin not in ("upper", "lower"):
+        raise ValueError(f"origin must be 'upper' or 'lower', got {origin!r}")
+    
     n_shapes = len(shapes)
 
     if n_shapes == 1:
@@ -412,7 +307,7 @@ def outlines( # or shapes
         fig, ax = plt.subplots(figsize=figsize_per_plot)
         _plot_single_shape(
             ax, polygon, centerlines.get(name), name, linewidth, show_axis,
-            plot_interiors, color_shape, color_line,
+            plot_interiors, color_shape, color_line, origin,
         )
        
     else:
@@ -425,7 +320,7 @@ def outlines( # or shapes
             ax = plt.subplot(nrows, ncols, i)
             _plot_single_shape(
                 ax, polygon, centerlines.get(name), name, linewidth, show_axis,
-                plot_interiors, color_shape, color_line,
+                plot_interiors, color_shape, color_line, origin,
             )
 
     if isinstance(save, str):
@@ -436,33 +331,77 @@ def outlines( # or shapes
         return fig
 
 
+def check_centerlines_orientation(
+    centerlines: dict[str, LineString],
+    ncols: int = 4,
+    figsize_per_ax: tuple[float, float] = (3.5, 3.5),
+    point_size: int = 60,
+) -> plt.Figure:
+    """Plot each centerline in its own subplot, coloring start/end points to show orientation.
 
+    Start point is shown in green, end point in red, so a reversed centerline
+    is immediately visible when comparing subplots across samples.
 
-def _plot_single_shape(
-    ax, polygon, centerline, name, linewidth, show_axis,
-    plot_interiors, color_shape, color_line,
-):
-    """Helper interne : trace une polygon + centerline optionnelle sur un ax donné."""
-    x, y = polygon.exterior.xy
-    ax.plot(x, y, c=color_shape, linewidth=linewidth)
+    Parameters
+    ----------
+    centerlines
+        Mapping of sample id -> centerline LineString.
+    ncols
+        Number of subplot columns.
+    figsize_per_ax
+        Figure size (width, height) allocated per subplot.
+    point_size
+        Marker size for start/end points.
 
-    if plot_interiors:
-        for interior in polygon.interiors:
-            x, y = interior.xy
-            ax.plot(x, y, c=color_shape, linewidth=linewidth)
+    Returns
+    -------
+    The matplotlib Figure.
+    """
+    keys = list(centerlines.keys())
+    n = len(keys)
+    nrows = int(np.ceil(n / ncols))
 
-    if centerline is not None:
-        x, y = centerline.xy
-        ax.plot(
-            x, y,
-            "-", c=color_line, linewidth=linewidth,
-        )
+    fig, axes = plt.subplots(
+        nrows, ncols,
+        figsize=(figsize_per_ax[0] * ncols, figsize_per_ax[1] * nrows),
+        squeeze=False,
+    )
+    axes_flat = axes.flatten()
 
-    ax.set_title(name, fontsize=20)
-    ax.set_aspect("equal")
+    for ax, key in zip(axes_flat, keys):
+        line = centerlines[key]
+        coords = np.array(line.coords)
 
-    if not show_axis:
+        # full path colored by progression along the line (start -> end)
+        ax.plot(coords[:, 0], coords[:, 1], color="gray", lw=1.5, zorder=1)
+        sc = ax.scatter(
+            coords[1:-1, 0], coords[1:-1, 1],
+            c=np.arange(1, len(coords) - 1),
+            cmap="viridis", s=point_size * 0.4, zorder=2,
+        ) if len(coords) > 2 else None
+
+        # start = green, end = red
+        ax.scatter(*coords[0], color="green", s=point_size, zorder=3, label="start", edgecolor="k")
+        ax.scatter(*coords[-1], color="red", s=point_size, zorder=3, label="end", edgecolor="k")
+
+        ax.set_title(str(key), fontsize=10)
+        ax.set_aspect("equal")
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    # hide unused axes
+    for ax in axes_flat[n:]:
         ax.axis("off")
+
+    handles = [
+        plt.Line2D([], [], marker="o", color="w", markerfacecolor="green", markeredgecolor="k", markersize=8, label="start"),
+        plt.Line2D([], [], marker="o", color="w", markerfacecolor="red", markeredgecolor="k", markersize=8, label="end"),
+    ]
+    fig.legend(handles=handles, loc="upper center", ncol=2, bbox_to_anchor=(0.5, 1.02))
+    fig.tight_layout()
+    plt.show()
+    # return fig
+
 
 
 def plot_shapes(shapes: dict, ncols: int = 4):
@@ -537,79 +476,71 @@ def plot_shape(
 
 
 
-def plot_cells(
-    cell1, 
-    cell2, 
-    figtitle,
-    figsize=(6,6), 
-    pt_cell=25, 
-    pt_nucl=7
-) -> None:
-    plt.figure(figsize=figsize)
-    plt.plot(cell1[:pt_cell,0], cell1[:pt_cell,1], color='blue', label='cell1')
-    plt.plot(cell2[:pt_cell,0], cell2[:pt_cell,1], color='red', label='cell2')
-    
-    plt.plot(cell1[-pt_nucl:,0], cell1[-pt_nucl:,1], color='blue', marker='x', label='nucl1')
-    plt.plot(cell2[-pt_nucl:,0], cell2[-pt_nucl:,1], color='red', marker='x', label='nucl2')
+# def plot_shapes(
+#     sdata: sd.SpatialData,
+#     group_lst: tuple = None,  # the cell types to consider
+#     shapes_lst: tuple = None,  # the shapes to plot
+#     color_key: str = "celltype_spatial",
+#     shape_key: str = "arteries",
+#     target_coordinates: str = "microns",
+#     figsize: tuple = (12, 6),
+#     palette: tuple = None,
+#     save: bool = False,
+# ):
+#     """Plot list of shapes
 
-    # plt.axhline(0, color='grey', lw=1)
-    # plt.axvline(0, color='grey', lw=1)
-    plt.legend()
-    # plt.gca().set_aspect('equal', adjustable='box')
-    plt.title(figtitle)
-    plt.show()
+#     Parameters
+#     ----------
+#     sdata
+#         SpatialData object obtained by tl.get_sdata_polygon()
+#     group_lst
+#         group list to consider (related to label_obs_key)
+#     shapes_lst
+#         shapes list to plot
+#     color_key
+#         label_key in sdata['table'].obs to consider
+#     shape_key
+#         SpatialData shape element to consider
+#     palette
+#         dictionary of colors to use
+#     target_coordinates
+#         target_coordinates system of sdata object
+#     figsize
+#         figure size
+#     save
+#         wether or not to save the figure
 
+#     """
+#     region_key = sdata['table'].uns["spatialdata_attrs"]["region"]
+#     my_shapes = {region_key: sdata[region_key], shape_key: sdata[shape_key]}
+#     my_tables = {"table": sdata["table"]}
+#     sdata2 = SpatialData(shapes=my_shapes, tables=my_tables)
 
+#     fig, axs = plt.subplots(ncols=len(shapes_lst), nrows=1, figsize=figsize)
+#     for i in range(0, len(shapes_lst)):
+#         poly = sdata2[shape_key][sdata2[shape_key].name == shapes_lst[i]].geometry.item()
+#         sdata3 = sd.polygon_query(
+#             sdata2,
+#             poly,
+#             target_coordinate_system=target_coordinates,
+#             filter_table=True,
+#         )
 
+#         # sdata3.pl.render_images().pl.show(ax=axs[i])
+#         if group_lst is None:
+#             group_lst = sdata2['table'].obs[color_key].unique().tolist()
 
-def plot_cell(
-    cell,
-    nucl,
-    figsize=(5,5),
-) -> None:
-    """
-    Plot cell with its nuclei.
+#         if palette is not None:
+#             mypal = [palette[x] for x in group_lst]
+#             sdata3.pl.render_shapes(elements=region_key, color=color_key, groups=group_lst, palette=mypal).pl.show(
+#                 ax=axs[i]
+#             )
+#         else:
+#             sdata3.pl.render_shapes(elements=region_key, color=color_key, groups=group_lst).pl.show(ax=axs[i])
 
-    Parameters
-    ----------
-        to be completed
+#         axs[i].set_title(shapes_lst[i])
+#         if i < len(shapes_lst) - 1:
+#             axs[i].get_legend().remove()
 
-    Returns
-    -------
-        to be completed
-    """
-    if isinstance(cell, (np.ndarray, list, tuple)):
-        cell_poly = Polygon(cell)
-    else:
-        cell_poly = cell
+#     plt.tight_layout()
 
-    if isinstance(nucl, (np.ndarray, list, tuple)):
-        nucl_poly = Polygon(nucl)
-    else:
-        nucl_poly = nucl
-
-    plt.figure(figsize=figsize)
-
-    patch1, points1 = plot_polygon(
-        cell_poly, 
-        edgecolor= '#75747A',
-        linewidth=2, 
-        color='#75747A',
-        facecolor = '#FED9AF',
-        )
-    patch2, points2 = plot_polygon(
-        nucl_poly, 
-        edgecolor= '#5D3E1E',
-        linewidth=1, 
-        color='#5D3E1E',
-        facecolor = '#D1EAC3',
-        )
-    points1.set_markersize(5)
-    points2.set_markersize(3)
-
-    ax = plt.gca()
-    ax.set_axis_off()          # hides x & y axes
-    plt.axis('off')
-    plt.show()
-    # ax.set_frame_on(False)     # removes border frame
-    # plt.margins(0)             # removes padding

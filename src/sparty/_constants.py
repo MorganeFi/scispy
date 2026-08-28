@@ -52,7 +52,7 @@ LOGFC_COLUMN = "log2FoldChange"
 PACKAGE_KEY = "sparty"
 SUPPORTED_TECHNOLOGIES = ("xenium", "merscope", "cosmx")
 
-GENE_EXCLUDE_PATTERN = "Unassigned.*|Deprecated.*|Intergenic.*|Neg.*|Blank-*|NegPrb*"
+GENE_EXCLUDE_PATTERN = "Unassigned.*|Deprecated.*|Intergenic.*|Neg.*|Blank-*|NegPrb*|BLANK_*"
 
 # GENE_EXCLUDE_PATTERN = "nan|<NA>|.*control.*|blank.*|antisense.*|unassigned.*|deprecated.*|intergenic.*|false.*|neg.*"
 # VALID_DIMENSIONS = ("c", "y", "x")

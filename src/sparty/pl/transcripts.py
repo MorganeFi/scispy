@@ -81,7 +81,7 @@ def _plot_density_grid(
     origin: str,
     hspace: float,
     wspace: float,
-    subplot_size: tuple,
+    figsize_per_ax: tuple,
     save: str | None,
     dpi: int,
 ):
@@ -91,7 +91,7 @@ def _plot_density_grid(
     ncols = len(sample_list)
     nrows = len(gene_names)
  
-    fig = plt.figure(figsize=(subplot_size[0] * ncols, subplot_size[1] * nrows))
+    fig = plt.figure(figsize=(figsize_per_ax[0] * ncols, figsize_per_ax[1] * nrows))
     plt.subplots_adjust(hspace=hspace, wspace=wspace)
  
     axes = [[None] * ncols for _ in range(nrows)]
@@ -171,12 +171,12 @@ def density(
     colorbar: str = None, # "indiv", "rows", "global"
     by_codeword: bool = False,
     cmap = plt.cm.Reds,
-    background: str = "black", # "white"
+    background: str = "white", # "white"
     scale: bool = False, # str = 'microns', # pixels # True /False
     origin: str = 'upper', # or lower 
     hspace: float = 0.5, 
     wspace: float = 0.5,
-    subplot_size: tuple = (4, 4),
+    figsize_per_ax: tuple = (4, 4),
     aggregate: bool = False,
     save: str | None = None,
     dpi: int = 300
@@ -323,7 +323,7 @@ def density(
         origin=origin,
         hspace=hspace,
         wspace=wspace,
-        subplot_size=subplot_size,
+        figsize_per_ax=figsize_per_ax,
         save=save,
         dpi=dpi,
     )

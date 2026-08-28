@@ -1,4 +1,4 @@
-from .pp.filters import filter_xenium, filter_merscope, filter_cosmx
+from ._filters import filter_xenium, filter_merscope, filter_cosmx
 from ._constants import XeniumKeys, MerscopeKeys, CosmxKeys, SUPPORTED_TECHNOLOGIES
 
 TECHNO_REGISTRY = {

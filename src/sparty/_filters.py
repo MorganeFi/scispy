@@ -1,4 +1,4 @@
-from .._constants import XeniumKeys, MerscopeKeys, CosmxKeys, GENE_EXCLUDE_PATTERN
+from ._constants import XeniumKeys, MerscopeKeys, CosmxKeys, GENE_EXCLUDE_PATTERN
 
 def filter_xenium(
     df, 

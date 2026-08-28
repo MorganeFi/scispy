@@ -125,7 +125,7 @@ def density_count_genes(
         xmin, ymin, xmax, ymax = compute_bounds_gpd(
             shape=sdata[shape_key], 
             transfo=get_transformation(sdata[shape_key]), 
-            scale=scale)
+            scale=scale).total_bounds
         polygon = shapely.geometry.box(xmin, ymin, xmax, ymax)
 
     if by_codeword and len(genes) == 1:

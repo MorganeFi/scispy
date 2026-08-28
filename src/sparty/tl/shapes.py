@@ -10,6 +10,7 @@ import anndata as ad
 
 # from ..pl._shapes import plot_shapes
 from ..tl.alpha_shape import alpha_shape_optimal
+from .._constants import GENE_EXCLUDE_PATTERN #, XeniumKeys, MerscopeKeys, 
 
 # from shapely import Polygon
 # from spatialdata.models import PointsModel
@@ -222,7 +223,7 @@ def count_in_shape(
     how: str = "inner",
     predicate: str = "intersects",
     coordinates: list = ['x', 'y'],
-    gene_exclude_pattern: str = "Unassigned.*|Deprecated.*|Intergenic.*|Neg.*",
+    gene_exclude_pattern: str = GENE_EXCLUDE_PATTERN,
 ):
     df_transcripts = sdata[transcript_key].copy()
     df_transcripts = df_transcripts[(df_transcripts['qv'] >= qv) & (df_transcripts.is_gene)]

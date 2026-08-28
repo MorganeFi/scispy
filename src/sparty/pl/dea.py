@@ -801,7 +801,8 @@ def heatmap_DE(
         print(f"{cell} -> {len(genes_sig)} genes DE")
 
         column_ct = mtx.columns.str.contains(f'{join_by}{cell}{join_by}', regex=False)
-        adata_tmp = ad.AnnData(mtx.loc[:, column_ct].T)
+        # adata_tmp = ad.AnnData(np.asarray(mtx.loc[:, column_ct].T, dtype=np.float32))
+        adata_tmp = ad.AnnData(mtx.loc[:, column_ct].T.copy())
         adata_tmp.obs[col_to_add] =  adata_tmp.obs.index.str.split(join_by, regex=False).tolist() 
   
         for col in colors:

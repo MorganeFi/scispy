@@ -13,7 +13,7 @@ from spatialdata.transformations import (
     get_transformation,
     set_transformation
 )
-from ..pp.transcripts import subset_transcripts
+from .transcripts import subset_transcripts
 
 
 def min_max_round(

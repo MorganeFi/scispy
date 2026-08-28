@@ -219,76 +219,76 @@ def _run_deseq2(
     return stat_res.results_df
 
 
-def _run_edger(
-    sub: ad.AnnData,
-    design: str,
-    condition: str,
-    test: str,
-    ref: str,
-    quiet: bool,
-) -> pd.DataFrame:
-    """Run edgeR (via edgePython, https://github.com/pachterlab/edgePython) on a
-    prepared, filtered subset and return the raw results_df.
+# def _run_edger(
+#     sub: ad.AnnData,
+#     design: str,
+#     condition: str,
+#     test: str,
+#     ref: str,
+#     quiet: bool,
+# ) -> pd.DataFrame:
+#     """Run edgeR (via edgePython, https://github.com/pachterlab/edgePython) on a
+#     prepared, filtered subset and return the raw results_df.
 
-    Mirrors `_run_deseq2`'s contract (same inputs, gene-indexed results_df
-    output) so the two engines are interchangeable in `pseudobulk()`. Pure
-    w.r.t. the caller's state: only reads `sub`.
+#     Mirrors `_run_deseq2`'s contract (same inputs, gene-indexed results_df
+#     output) so the two engines are interchangeable in `pseudobulk()`. Pure
+#     w.r.t. the caller's state: only reads `sub`.
 
-    Pipeline: build a DGEList -> TMM normalization -> dispersion estimation
-    -> quasi-likelihood GLM fit -> QL F-test on the `test` vs `ref`
-    coefficient -> extract all genes' results, re-indexed by gene and with
-    columns renamed to match DESeq2's naming (`log2FoldChange`, `pvalue`,
-    `padj`) so downstream code doesn't need to branch on which engine ran.
+#     Pipeline: build a DGEList -> TMM normalization -> dispersion estimation
+#     -> quasi-likelihood GLM fit -> QL F-test on the `test` vs `ref`
+#     coefficient -> extract all genes' results, re-indexed by gene and with
+#     columns renamed to match DESeq2's naming (`log2FoldChange`, `pvalue`,
+#     `padj`) so downstream code doesn't need to branch on which engine ran.
 
-    Requires the optional `edgepython` and `patsy` dependencies
-    (`pip install "edgepython[formula]"`).
-    """
-    try:
-        import edgepython as ep
-        import patsy
-    except ImportError as e:
-        raise ImportError(
-            "`_run_edger` requires the optional `edgepython` and `patsy` "
-            "dependencies. Install with `pip install \"edgepython[formula]\"`."
-        ) from e
+#     Requires the optional `edgepython` and `patsy` dependencies
+#     (`pip install "edgepython[formula]"`).
+#     """
+#     try:
+#         import edgepython as ep
+#         import patsy
+#     except ImportError as e:
+#         raise ImportError(
+#             "`_run_edger` requires the optional `edgepython` and `patsy` "
+#             "dependencies. Install with `pip install \"edgepython[formula]\"`."
+#         ) from e
 
-    # edgePython expects a genes x samples count matrix; `sub` is samples x genes.
-    counts = np.asarray(sub.X.T)
-    group = sub.obs[condition].astype(str).to_numpy()
+#     # edgePython expects a genes x samples count matrix; `sub` is samples x genes.
+#     counts = np.asarray(sub.X.T)
+#     group = sub.obs[condition].astype(str).to_numpy()
 
-    y = ep.make_dgelist(counts=counts, group=group)
-    y = ep.calc_norm_factors(y)
+#     y = ep.make_dgelist(counts=counts, group=group)
+#     y = ep.calc_norm_factors(y)
 
-    # Force `ref` as the reference level so the resulting coefficient reads
-    # as test-vs-ref, matching DESeq2's `contrast=[condition, test, ref]`.
-    design_formula = design.replace(
-        condition, f'C({condition}, Treatment(reference="{ref}"))'
-    )
-    dmatrix = patsy.dmatrix(design_formula, sub.obs, return_type="dataframe")
+#     # Force `ref` as the reference level so the resulting coefficient reads
+#     # as test-vs-ref, matching DESeq2's `contrast=[condition, test, ref]`.
+#     design_formula = design.replace(
+#         condition, f'C({condition}, Treatment(reference="{ref}"))'
+#     )
+#     dmatrix = patsy.dmatrix(design_formula, sub.obs, return_type="dataframe")
 
-    coef_name = f'C({condition}, Treatment(reference="{ref}"))[T.{test}]'
-    if coef_name not in dmatrix.columns:
-        raise ValueError(
-            f"Could not find coefficient `{coef_name}` in the design matrix "
-            f"columns: {dmatrix.columns.tolist()}. Check that `design` "
-            f"includes `{condition}` exactly as written."
-        )
-    coef_idx = list(dmatrix.columns).index(coef_name)
+#     coef_name = f'C({condition}, Treatment(reference="{ref}"))[T.{test}]'
+#     if coef_name not in dmatrix.columns:
+#         raise ValueError(
+#             f"Could not find coefficient `{coef_name}` in the design matrix "
+#             f"columns: {dmatrix.columns.tolist()}. Check that `design` "
+#             f"includes `{condition}` exactly as written."
+#         )
+#     coef_idx = list(dmatrix.columns).index(coef_name)
 
-    y = ep.estimate_disp(y, design=dmatrix.to_numpy())
-    fit = ep.glm_ql_fit(y, dmatrix.to_numpy())
-    res = ep.glm_ql_ftest(fit, coef=coef_idx)
+#     y = ep.estimate_disp(y, design=dmatrix.to_numpy())
+#     fit = ep.glm_ql_fit(y, dmatrix.to_numpy())
+#     res = ep.glm_ql_ftest(fit, coef=coef_idx)
 
-    # sort_by="none" keeps the original gene order, needed to remap the
-    # integer-positional index back to gene names below.
-    top = ep.top_tags(res, n=sub.n_vars, sort_by="none")
-    results_df = top["table"]
-    results_df.index = sub.var_names[results_df.index]
-    results_df = results_df.rename(
-        columns={"logFC": "log2FoldChange", "PValue": "pvalue", "FDR": "padj"}
-    )
+#     # sort_by="none" keeps the original gene order, needed to remap the
+#     # integer-positional index back to gene names below.
+#     top = ep.top_tags(res, n=sub.n_vars, sort_by="none")
+#     results_df = top["table"]
+#     results_df.index = sub.var_names[results_df.index]
+#     results_df = results_df.rename(
+#         columns={"logFC": "log2FoldChange", "PValue": "pvalue", "FDR": "padj"}
+#     )
 
-    return results_df
+#     return results_df
 
 
 def _add_pseudobulk_stats(
@@ -342,7 +342,7 @@ def _add_pseudobulk_stats(
     return results_df.reset_index(names="gene")
 
 
-def pseudobulk(
+def pseudobulk_V2(
     adata: ad.AnnData,
     replicate: str,
     condition: str,  # needs to be unique per replicate
